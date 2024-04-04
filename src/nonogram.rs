@@ -21,10 +21,6 @@ impl Puzzle {
 
         puzzle
     }
-
-    pub fn show(&self) {
-        println!("{:?}", self);
-    }
 }
 
 #[derive(Deserialize, Debug)]
