@@ -35,7 +35,7 @@ impl<K, P, S: Default> PriorityQueue<K, P, S> {
     }
 }
 
-impl<K: Hash + Eq + Copy, P: Ord, S: BuildHasher> PriorityQueue<K, P, S> {
+impl<K: Hash + Eq + Copy, P: PartialOrd, S: BuildHasher> PriorityQueue<K, P, S> {
     pub fn insert(&mut self, key: K, priority: P) -> bool {
         let insert_value = HashRef::new(key);
 
@@ -81,7 +81,7 @@ impl<K, P> PriorityHeap<K, P> {
     }
 }
 
-impl<K, P: Ord> PriorityHeap<K, P> {
+impl<K, P: PartialOrd> PriorityHeap<K, P> {
     fn push(&mut self, value: HeapNode<K, P>) {
         self.heap_vector.push(value);
 
@@ -191,12 +191,6 @@ impl<K, P: Eq> Eq for HeapNode<K, P> {}
 impl<K, P: PartialOrd> PartialOrd for HeapNode<K, P> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.priority.partial_cmp(&other.priority)
-    }
-}
-
-impl<K, P: Ord> Ord for HeapNode<K, P> {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.priority.cmp(&other.priority)
     }
 }
 

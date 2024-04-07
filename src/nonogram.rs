@@ -1,3 +1,5 @@
+mod solve;
+
 use serde::Deserialize;
 use std::fs::File;
 use std::io::BufReader;
