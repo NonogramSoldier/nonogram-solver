@@ -103,12 +103,12 @@ impl<K, P> PriorityHeap<K, P> {
 
 impl<K, P: PartialOrd> PriorityHeap<K, P> {
     fn new_heapify(vec: Vec<HeapNode<K, P>>) -> Self {
-        let vec_len = vec.len();
-        let first_index = if vec_len == 0 { 0 } else { vec_len / 2 - 1 };
+        let length = vec.len();
+        let first_index = if length == 0 { 0 } else { length / 2 - 1 };
         let mut heap = Self { heap_vector: vec };
 
         for index in (0..first_index).rev() {
-            heap.partial_heapify(vec_len, index);
+            heap.partial_heapify(length, index);
         }
 
         for (index, node) in heap.heap_vector.iter_mut().enumerate() {
@@ -118,16 +118,16 @@ impl<K, P: PartialOrd> PriorityHeap<K, P> {
         heap
     }
 
-    fn partial_heapify(&mut self, vec_len: usize, mut index: usize) {
+    fn partial_heapify(&mut self, length: usize, mut index: usize) {
         loop {
             let mut swap_index = index;
             let left_child = left_child(index);
             let right_child = right_child(index);
 
-            if left_child < vec_len && self.heap_vector[swap_index] < self.heap_vector[left_child] {
+            if left_child < length && self.heap_vector[swap_index] < self.heap_vector[left_child] {
                 swap_index = left_child;
             }
-            if right_child < vec_len && self.heap_vector[swap_index] < self.heap_vector[right_child]
+            if right_child < length && self.heap_vector[swap_index] < self.heap_vector[right_child]
             {
                 swap_index = right_child;
             }
