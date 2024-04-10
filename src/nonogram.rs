@@ -1,14 +1,14 @@
-mod solve;
+pub mod solve;
 
 use serde::Deserialize;
 use std::fs::File;
 use std::io::BufReader;
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, Deserialize)]
 pub struct Puzzle {
     initial_color: Color,
     paint_colors: Vec<Color>,
-    clues: Clues,
+    clues: AllClues,
 }
 
 impl Puzzle {
@@ -23,20 +23,47 @@ impl Puzzle {
 
         puzzle
     }
+
+    pub fn get_row_length(&self) -> usize {
+        self.clues.get_row_length()
+    }
+
+    pub fn get_column_length(&self) -> usize {
+        self.clues.get_column_length()
+    }
+
+    pub fn get_color_num(&self) -> usize {
+        self.paint_colors.len()
+    }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, Deserialize)]
 struct Color {
     name: String,
 }
 
-#[derive(Deserialize, Debug)]
-struct Clues {
-    row: Vec<Vec<Description>>,
-    column: Vec<Vec<Description>>,
+#[derive(Debug, Deserialize)]
+struct AllClues {
+    row: Vec<LineClue>,
+    column: Vec<LineClue>,
 }
 
-#[derive(Deserialize, Debug)]
+impl AllClues {
+    fn get_row_length(&self) -> usize {
+        self.column.len()
+    }
+
+    fn get_column_length(&self) -> usize {
+        self.row.len()
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct LineClue {
+    descriptions: Vec<Description>,
+}
+
+#[derive(Debug, Deserialize)]
 struct Description {
     color_index: usize,
     number: usize,
