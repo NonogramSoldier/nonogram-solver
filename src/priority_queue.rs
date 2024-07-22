@@ -1,315 +1,181 @@
 use std::{
-    cell::RefCell,
-    collections::HashSet,
-    hash::{BuildHasher, Hash, Hasher, RandomState},
-    rc::Rc,
+    collections::HashMap,
+    hash::{BuildHasher, Hash, RandomState},
 };
 
-fn left_child(index: usize) -> usize {
-    index * 2 + 1
-}
+use fxhash::FxBuildHasher;
 
-fn right_child(index: usize) -> usize {
-    index * 2 + 2
-}
-
-fn parent(index: usize) -> usize {
-    if index == 0 {
-        0
-    } else {
-        (index - 1) / 2
-    }
-}
-
-pub struct PriorityQueue<K, P, S = RandomState> {
-    heap: PriorityHeap<K, P>,
-    set: HashSet<HashRef<K>, S>,
-}
-
-impl<K, P, S: Default> PriorityQueue<K, P, S> {
-    pub fn new() -> Self {
-        Self {
-            heap: PriorityHeap::new(),
-            set: HashSet::default(),
-        }
-    }
-}
-
-impl<K: Hash + Eq, P: PartialOrd, S: BuildHasher + Default> PriorityQueue<K, P, S> {
-    pub fn new_heapify(vec: Vec<(K, P)>) -> Self {
-        let mut set: HashSet<HashRef<K>, S> = HashSet::default();
-        let mut heap_vector: Vec<HeapNode<K, P>> = Vec::new();
-
-        for (key, priority) in vec {
-            let value = HashRef::new(key);
-
-            if set.insert(value.clone()) {
-                heap_vector.push(HeapNode::new(value, priority))
-            }
-        }
-
-        let heap = PriorityHeap::new_heapify(heap_vector);
-
-        Self { heap, set }
-    }
-
-    pub fn insert(&mut self, key: K, priority: P) -> bool {
-        let insert_value = HashRef::new(key);
-
-        if !self.set.insert(insert_value.clone()) {
-            false
+macro_rules! parent {
+    ($index:expr) => {
+        if $index == 0 {
+            None
         } else {
-            self.heap.push(HeapNode::new(insert_value, priority));
-            true
+            Some(($index - 1) >> 1)
         }
-    }
-
-    pub fn pop(&mut self) -> Option<K> {
-        match self.heap.pop() {
-            Some(node) => {
-                self.set.remove(&node.value);
-                match Rc::try_unwrap(node.value.refer) {
-                    Ok(inner) => Some(inner.into_inner().key),
-                    Err(_) => None,
-                }
-            }
-            None => None,
-        }
-    }
-
-    pub fn modify(&mut self, key: K, priority: P) -> bool {
-        match self.set.get(&HashRef::new(key)) {
-            Some(value) => {
-                let index = value.refer.borrow().index;
-                self.heap.modify(index, priority);
-                true
-            }
-            None => false,
-        }
-    }
+    };
 }
 
-struct PriorityHeap<K, P> {
-    heap_vector: Vec<HeapNode<K, P>>,
+macro_rules! left_child {
+    ($index:expr) => {
+        2 * $index + 1
+    };
 }
 
-impl<K, P> PriorityHeap<K, P> {
-    fn new() -> Self {
+macro_rules! right_child {
+    ($index:expr) => {
+        2 * $index + 2
+    };
+}
+
+#[derive(Debug)]
+pub struct PriorityQueue<K, P, S = RandomState> {
+    pub heap: Vec<(K, P)>,
+    pub map: HashMap<K, usize, S>,
+}
+
+pub type FxPriorityQueue<K, P> = PriorityQueue<K, P, FxBuildHasher>;
+
+impl<K, P, S: Default> Default for PriorityQueue<K, P, S> {
+    fn default() -> Self {
         Self {
-            heap_vector: Vec::new(),
+            heap: Default::default(),
+            map: Default::default(),
         }
     }
 }
 
-impl<K, P: PartialOrd> PriorityHeap<K, P> {
-    fn new_heapify(vec: Vec<HeapNode<K, P>>) -> Self {
+impl<K, P, S> PriorityQueue<K, P, S>
+where
+    K: Eq + Hash + Copy,
+    P: Ord,
+    S: BuildHasher + Default,
+{
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    pub fn new_heapify(vec: Vec<(K, P)>) -> Self {
         let length = vec.len();
         let first_index = if length == 0 { 0 } else { length / 2 - 1 };
-        let mut heap = Self { heap_vector: vec };
+        let mut value = Self {
+            heap: vec,
+            map: Default::default(),
+        };
 
-        for index in (0..first_index).rev() {
-            heap.partial_heapify(length, index);
+        for index in (0..=first_index).rev() {
+            value.partial_heapify(length, index);
         }
 
-        for (index, node) in heap.heap_vector.iter_mut().enumerate() {
-            node.set_index(index);
+        for (index, node) in value.heap.iter().enumerate() {
+            value.map.insert(node.0, index);
         }
 
-        heap
+        value
+    }
+
+    pub fn insert(&mut self, key: K, priority: P) {
+        if self.map.contains_key(&key) {
+            let index = *self.map.get(&key).unwrap();
+            self.heap[index].1 = priority;
+
+            if index == self.sift_up(index) {
+                self.sift_down(index);
+            }
+        } else {
+            let push_index = self.heap.len();
+
+            self.heap.push((key, priority));
+            self.map.insert(key, push_index);
+
+            self.sift_up(push_index);
+        }
+    }
+
+    pub fn pop(&mut self) -> Option<(K, P)> {
+        if self.heap.len() == 0 {
+            return None;
+        }
+        
+        self.map.remove(&self.heap[0].0);
+
+        if self.heap.len() == 1 {
+            return self.heap.pop();
+        }
+        
+        self.swap_node(0, self.heap.len() - 1);
+        
+        let result = self.heap.pop();
+        self.sift_down(0);
+        result
     }
 
     fn partial_heapify(&mut self, length: usize, mut index: usize) {
         loop {
-            let mut swap_index = index;
-            let left_child = left_child(index);
-            let right_child = right_child(index);
+            let mut max_node = index;
+            let left_child = left_child!(index);
+            let right_child = right_child!(index);
 
-            if left_child < length && self.heap_vector[swap_index] < self.heap_vector[left_child] {
-                swap_index = left_child;
+            if left_child < length && self.heap[max_node].1 < self.heap[left_child].1 {
+                max_node = left_child;
             }
-            if right_child < length && self.heap_vector[swap_index] < self.heap_vector[right_child]
-            {
-                swap_index = right_child;
+            if right_child < length && self.heap[max_node].1 < self.heap[right_child].1 {
+                max_node = right_child;
             }
 
-            if swap_index == index {
+            if max_node == index {
                 break;
             }
-            self.heap_vector.swap(index, swap_index);
-            index = swap_index;
+
+            self.heap.swap(index, max_node);
+            index = max_node;
         }
-    }
-
-    fn push(&mut self, value: HeapNode<K, P>) {
-        self.heap_vector.push(value);
-
-        self.sift_up(self.heap_vector.len() - 1);
-    }
-
-    fn pop(&mut self) -> Option<HeapNode<K, P>> {
-        let heap_len = self.heap_vector.len();
-
-        if heap_len <= 1 {
-            return self.heap_vector.pop();
-        }
-
-        self.heap_vector.swap(0, heap_len - 1);
-        let pop_value = self.heap_vector.pop();
-
-        self.sift_down(0);
-
-        pop_value
-    }
-
-    fn modify(&mut self, index: usize, priority: P) {
-        self.heap_vector[index].set_priority(priority);
-
-        if index == self.sift_up(index) {
-            self.sift_down(index);
-        }
-    }
-
-    fn swap(&mut self, index1: usize, index2: usize) {
-        self.heap_vector[index1].value.set_index(index2);
-        self.heap_vector[index2].value.set_index(index1);
-
-        self.heap_vector.swap(index1, index2);
     }
 
     fn sift_up(&mut self, mut index: usize) -> usize {
         loop {
-            let parent = parent(index);
-
-            if self.heap_vector[index] > self.heap_vector[parent] {
-                self.swap(index, parent);
-            } else {
-                break index;
+            match parent!(index) {
+                Some(parent) => {
+                    if self.heap[index].1 > self.heap[parent].1 {
+                        self.swap_node(index, parent);
+                        index = parent;
+                    } else {
+                        *(self.map.get_mut(&self.heap[index].0).unwrap()) = index;
+                        break index;
+                    }
+                }
+                None => {
+                    *(self.map.get_mut(&self.heap[index].0).unwrap()) = index;
+                    break index;
+                }
             }
-
-            index = parent;
         }
     }
 
-    fn sift_down(&mut self, mut index: usize) -> usize {
-        let heap_len = self.heap_vector.len();
+    fn sift_down(&mut self, mut index: usize) {
         loop {
-            let mut swap_index = index;
-            let left_child = left_child(index);
-            let right_child = right_child(index);
+            let mut max_node = index;
+            let left_child = left_child!(index);
+            let right_child = right_child!(index);
 
-            if left_child < heap_len && self.heap_vector[swap_index] < self.heap_vector[left_child]
-            {
-                swap_index = left_child;
+            if left_child < self.heap.len() && self.heap[max_node].1 < self.heap[left_child].1 {
+                max_node = left_child;
             }
-            if right_child < heap_len
-                && self.heap_vector[swap_index] < self.heap_vector[right_child]
-            {
-                swap_index = right_child;
+            if right_child < self.heap.len() && self.heap[max_node].1 < self.heap[right_child].1 {
+                max_node = right_child;
             }
 
-            if swap_index == index {
-                break index;
+            if max_node == index {
+                *(self.map.get_mut(&self.heap[index].0).unwrap()) = index;
+                break;
             }
-            self.swap(index, swap_index);
-            index = swap_index;
-        }
-    }
-}
 
-struct HeapNode<K, P> {
-    value: HashRef<K>,
-    priority: P,
-}
-
-impl<K, P> HeapNode<K, P> {
-    fn new(value: HashRef<K>, priority: P) -> Self {
-        Self { value, priority }
-    }
-
-    fn set_priority(&mut self, priority: P) {
-        self.priority = priority;
-    }
-
-    fn set_index(&self, index: usize) {
-        self.value.set_index(index);
-    }
-}
-
-impl<K, P: PartialEq> PartialEq for HeapNode<K, P> {
-    fn eq(&self, other: &Self) -> bool {
-        self.priority == other.priority
-    }
-}
-
-impl<K, P: Eq> Eq for HeapNode<K, P> {}
-
-impl<K, P: PartialOrd> PartialOrd for HeapNode<K, P> {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.priority.partial_cmp(&other.priority)
-    }
-}
-
-struct HashRef<K> {
-    refer: Rc<RefCell<KeyIndex<K>>>,
-}
-
-impl<K> HashRef<K> {
-    fn new(key: K) -> Self {
-        Self {
-            refer: Rc::new(RefCell::new(KeyIndex::new(key))),
+            self.swap_node(index, max_node);
+            index = max_node;
         }
     }
 
-    fn set_index(&self, index: usize) {
-        self.refer.borrow_mut().set_index(index);
-    }
-
-    fn clone(&self) -> Self {
-        Self {
-            refer: self.refer.clone(),
-        }
+    fn swap_node(&mut self, index1: usize, index2: usize) {
+        *(self.map.get_mut(&self.heap[index2].0).unwrap()) = index1;
+        self.heap.swap(index1, index2);
     }
 }
-
-impl<K: Hash> Hash for HashRef<K> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.refer.borrow().hash(state);
-    }
-}
-
-impl<K: PartialEq> PartialEq for HashRef<K> {
-    fn eq(&self, other: &Self) -> bool {
-        *self.refer.borrow() == *other.refer.borrow()
-    }
-}
-
-impl<K: Eq> Eq for HashRef<K> {}
-
-struct KeyIndex<K> {
-    key: K,
-    index: usize,
-}
-
-impl<K> KeyIndex<K> {
-    fn new(key: K) -> Self {
-        Self { key, index: 0 }
-    }
-
-    fn set_index(&mut self, index: usize) {
-        self.index = index;
-    }
-}
-
-impl<K: Hash> Hash for KeyIndex<K> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.key.hash(state);
-    }
-}
-
-impl<K: PartialEq> PartialEq for KeyIndex<K> {
-    fn eq(&self, other: &Self) -> bool {
-        self.key == other.key
-    }
-}
-
-impl<K: Eq> Eq for KeyIndex<K> {}
