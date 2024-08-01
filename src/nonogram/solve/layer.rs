@@ -16,31 +16,31 @@ impl LayerRef {
 #[derive(Debug)]
 struct Layer {
     parent: Option<LayerRef>,
-    grid: FxHashMap<PixelId, PixelMemo>,
+    grid: FxHashMap<PixelId, LayerPixelMemo>,
 }
 
 impl Layer {
     fn new(parent: Option<LayerRef>) -> Self {
         Self {
             parent,
-            grid: FxHashMap::default(),
+            grid: Default::default(),
         }
     }
 }
 
 #[derive(Debug)]
-pub struct PixelMemo {
-    blank_possibility: Possibility,
-    paint_possibilities: Vec<Possibility>,
+pub struct LayerPixelMemo {
+    blank_possibility: LayerPossibility,
+    paint_possibilities: Vec<LayerPossibility>,
 }
 
 #[derive(Debug)]
-enum Possibility {
+enum LayerPossibility {
     Possible(Option<LayerRef>),
     Impossible,
 }
 
-impl Default for Possibility {
+impl Default for LayerPossibility {
     fn default() -> Self {
         Self::Possible(None)
     }
