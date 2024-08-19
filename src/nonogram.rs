@@ -6,8 +6,7 @@ use std::io::BufReader;
 
 #[derive(Debug, Deserialize)]
 pub struct Puzzle {
-    background_color: Color,
-    paint_colors: Vec<Color>,
+    colors: Vec<Color>,
     clues: AllClues,
 }
 

@@ -31,21 +31,21 @@ impl<'a> GridProbability<'a> {
                 },
                 resources.get_color_num(),
             ));
-        
+
         solve_line.solve(line_memo, line_clue, *resources.get_free(line_id).unwrap())
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct LineProbability {
-    color_cases: Vec<ColorCases>,
+    color_cases: Vec<Vec<u128>>,
     painting_count: u128,
 }
 
 impl LineProbability {
     pub fn new(length: usize, color_num: usize) -> Self {
         Self {
-            color_cases: vec![ColorCases::new(color_num); length],
+            color_cases: vec![vec![0; color_num]; length],
             painting_count: 0,
         }
     }
@@ -58,10 +58,10 @@ impl LineProbability {
     ) -> bool {
         if line_clue.len() == 0 {
             for (index, memo) in line_memo.iter().enumerate() {
-                if memo.blank_possibility == Possibility::Impossible {
+                if memo.possibilities[0] == Possibility::Impossible {
                     return false;
                 }
-                self.color_cases[index].blank_num = 1;
+                self.color_cases[index][0] = 1;
             }
             self.painting_count = 1;
             true
@@ -88,8 +88,7 @@ impl LineProbability {
 
                     if is_first_place {
                         for index in (0..description.number).rev() {
-                            if line_memo[min_index + index].paint_possibilities
-                                [description.color_index]
+                            if line_memo[min_index + index].possibilities[description.color_index]
                                 == Possibility::Impossible
                             {
                                 segment_note.block_states = BlockStates::Blocked(index);
@@ -97,8 +96,8 @@ impl LineProbability {
                             }
                         }
                     } else {
-                        if line_memo[min_index + place_index + description.number - 1]
-                            .paint_possibilities[description.color_index]
+                        if line_memo[min_index + place_index + description.number - 1].possibilities
+                            [description.color_index]
                             == Possibility::Impossible
                         {
                             segment_note.block_states =
@@ -114,14 +113,14 @@ impl LineProbability {
                     }
 
                     if is_first_clue && is_first_place {
-                        segment_note.left_case = 1;
+                        segment_note.left_cases = 1;
                     } else {
                         let is_blank_possible = line_memo[min_index + place_index - 1]
-                            .blank_possibility
+                            .possibilities[0]
                             == Possibility::Possible;
 
                         if is_blank_possible && !is_first_place {
-                            segment_note.left_case = segments[place_index - 1].left_case;
+                            segment_note.left_cases = segments[place_index - 1].left_cases;
                         }
 
                         if !is_first_clue
@@ -131,8 +130,8 @@ impl LineProbability {
                                 || !(line_clue[clue_index - 1].color_index
                                     == description.color_index))
                         {
-                            segment_note.left_case +=
-                                description_notes[clue_index - 1].segments[place_index].left_case;
+                            segment_note.left_cases +=
+                                description_notes[clue_index - 1].segments[place_index].left_cases;
                         }
                     }
 
@@ -152,16 +151,16 @@ impl LineProbability {
                     let is_first_place = place_index == free - 1;
 
                     if is_first_clue && is_first_place {
-                        description_notes[clue_index].segments[place_index].right_case = 1;
+                        description_notes[clue_index].segments[place_index].right_cases = 1;
                     } else {
                         let is_blank_possible = line_memo
                             [min_index + place_index + description.number]
-                            .blank_possibility
+                            .possibilities[0]
                             == Possibility::Possible;
 
                         if is_blank_possible && !is_first_place {
-                            description_notes[clue_index].segments[place_index].right_case =
-                                description_notes[clue_index].segments[place_index + 1].right_case;
+                            description_notes[clue_index].segments[place_index].right_cases =
+                                description_notes[clue_index].segments[place_index + 1].right_cases;
                         }
 
                         if !is_first_clue
@@ -171,15 +170,15 @@ impl LineProbability {
                                 || !(line_clue[clue_index + 1].color_index
                                     == description.color_index))
                         {
-                            description_notes[clue_index].segments[place_index].right_case +=
-                                description_notes[clue_index + 1].segments[place_index].right_case;
+                            description_notes[clue_index].segments[place_index].right_cases +=
+                                description_notes[clue_index + 1].segments[place_index].right_cases;
                         }
                     }
                 }
             }
 
             for color_case in self.color_cases.iter_mut() {
-                color_case.paint_nums.fill(0);
+                color_case.fill(0);
             }
 
             self.painting_count = 0;
@@ -190,12 +189,12 @@ impl LineProbability {
                     description_notes[clue_index].segments.iter().enumerate()
                 {
                     let product = match segment.block_states {
-                        BlockStates::Open => segment.left_case * segment.right_case,
+                        BlockStates::Open => segment.left_cases * segment.right_cases,
                         _ => 0,
                     };
 
                     for in_segment in 0..description.number {
-                        self.color_cases[min_index + place_index + in_segment].paint_nums
+                        self.color_cases[min_index + place_index + in_segment]
                             [description.color_index] += product;
                     }
 
@@ -210,9 +209,9 @@ impl LineProbability {
             }
 
             for color_case in self.color_cases.iter_mut() {
-                color_case.blank_num = self.painting_count;
-                for paint_case in color_case.paint_nums.iter() {
-                    color_case.blank_num -= paint_case;
+                color_case[0] = self.painting_count;
+                for paint_index in 1..color_case.len() {
+                    color_case[0] -= color_case[paint_index];
                 }
             }
             // println!("{:#?}", description_notes);
@@ -239,16 +238,16 @@ impl DescriptionNote {
 #[derive(Debug)]
 struct SegmentNote {
     block_states: BlockStates,
-    left_case: u128,
-    right_case: u128,
+    left_cases: u128,
+    right_cases: u128,
 }
 
 impl Default for SegmentNote {
     fn default() -> Self {
         Self {
             block_states: BlockStates::Open,
-            left_case: 0,
-            right_case: 0,
+            left_cases: 0,
+            right_cases: 0,
         }
     }
 }
@@ -257,19 +256,4 @@ impl Default for SegmentNote {
 enum BlockStates {
     Blocked(usize /* caused index */),
     Open,
-}
-
-#[derive(Debug, Clone)]
-struct ColorCases {
-    blank_num: u128,
-    paint_nums: Vec<u128>,
-}
-
-impl ColorCases {
-    fn new(color_num: usize) -> Self {
-        Self {
-            blank_num: 0,
-            paint_nums: vec![0; color_num],
-        }
-    }
 }
