@@ -4,7 +4,7 @@ mod solve_resources;
 
 use std::{cell::RefCell, rc::Rc};
 
-use fxhash::FxHashMap;
+use fxhash::{FxHashMap, FxHashSet};
 use grid_probability::{GridProbability, LineProbability};
 use layer::LayerRef;
 use num_integer::binomial;
@@ -17,38 +17,10 @@ pub fn solve(puzzle: &Puzzle) -> bool {
     // resources.show_free();
 
     let mut line_probability = LineProbability::new(10, 2);
-    let line_memo = vec![
-        PixelMemo {
-            possibilities: vec![Possibility::Possible, Possibility::Possible],
-        },
-        PixelMemo {
-            possibilities: vec![Possibility::Possible, Possibility::Possible],
-        },
-        PixelMemo {
-            possibilities: vec![Possibility::Possible, Possibility::Possible],
-        },
-        PixelMemo {
-            possibilities: vec![Possibility::Possible, Possibility::Possible],
-        },
-        PixelMemo {
-            possibilities: vec![Possibility::Possible, Possibility::Possible],
-        },
-        PixelMemo {
-            possibilities: vec![Possibility::Impossible, Possibility::Possible],
-        },
-        PixelMemo {
-            possibilities: vec![Possibility::Possible, Possibility::Possible],
-        },
-        PixelMemo {
-            possibilities: vec![Possibility::Impossible, Possibility::Possible],
-        },
-        PixelMemo {
-            possibilities: vec![Possibility::Possible, Possibility::Possible],
-        },
-        PixelMemo {
-            possibilities: vec![Possibility::Possible, Possibility::Possible],
-        },
-    ];
+    let mut line_memo = vec![PixelMemo::new(2); 10];
+
+    line_memo[5].possibles.remove(&0);
+    line_memo[7].possibles.remove(&0);
 
     let line_clue = LineClue {
         descriptions: vec![
@@ -351,13 +323,15 @@ impl Iterator for PixelIterator {
 
 type Priority = f64;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PixelMemo {
-    possibilities: Vec<Possibility>,
+    possibles: FxHashSet<usize>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
-enum Possibility {
-    Possible,
-    Impossible,
+impl PixelMemo {
+    fn new(color_num: usize) -> Self {
+        Self {
+            possibles: (0..color_num).collect()
+        }
+    }
 }

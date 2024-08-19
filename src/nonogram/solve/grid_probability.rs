@@ -58,7 +58,7 @@ impl LineProbability {
     ) -> bool {
         if line_clue.len() == 0 {
             for (index, memo) in line_memo.iter().enumerate() {
-                if memo.possibilities[0] == Possibility::Impossible {
+                if !memo.possibles.contains(&0) {
                     return false;
                 }
                 self.color_cases[index][0] = 1;
@@ -88,17 +88,18 @@ impl LineProbability {
 
                     if is_first_place {
                         for index in (0..description.number).rev() {
-                            if line_memo[min_index + index].possibilities[description.color_index]
-                                == Possibility::Impossible
+                            if !line_memo[min_index + index]
+                                .possibles
+                                .contains(&description.color_index)
                             {
                                 segment_note.block_states = BlockStates::Blocked(index);
                                 break;
                             }
                         }
                     } else {
-                        if line_memo[min_index + place_index + description.number - 1].possibilities
-                            [description.color_index]
-                            == Possibility::Impossible
+                        if !line_memo[min_index + place_index + description.number - 1]
+                            .possibles
+                            .contains(&description.color_index)
                         {
                             segment_note.block_states =
                                 BlockStates::Blocked(description.number - 1);
@@ -116,8 +117,8 @@ impl LineProbability {
                         segment_note.left_cases = 1;
                     } else {
                         let is_blank_possible = line_memo[min_index + place_index - 1]
-                            .possibilities[0]
-                            == Possibility::Possible;
+                            .possibles
+                            .contains(&0);
 
                         if is_blank_possible && !is_first_place {
                             segment_note.left_cases = segments[place_index - 1].left_cases;
@@ -155,8 +156,8 @@ impl LineProbability {
                     } else {
                         let is_blank_possible = line_memo
                             [min_index + place_index + description.number]
-                            .possibilities[0]
-                            == Possibility::Possible;
+                            .possibles
+                            .contains(&0);
 
                         if is_blank_possible && !is_first_place {
                             description_notes[clue_index].segments[place_index].right_cases =
