@@ -4,6 +4,7 @@ mod solve_resources;
 
 use std::{cell::RefCell, rc::Rc};
 
+use anyhow::{Context, Result};
 use fxhash::{FxHashMap, FxHashSet};
 use grid_probability::{GridProbability, LineProbability};
 use layer::LayerRef;
@@ -331,7 +332,7 @@ pub struct PixelMemo {
 impl PixelMemo {
     fn new(color_num: usize) -> Self {
         Self {
-            possibles: (0..color_num).collect()
+            possibles: (0..color_num).collect(),
         }
     }
 }

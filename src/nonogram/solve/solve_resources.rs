@@ -45,8 +45,10 @@ impl<'a> SolveResources<'a> {
         self.color_num
     }
 
-    pub fn get_free(&self, line_id: LineId) -> Option<&usize> {
-        self.free.get(&line_id)
+    pub fn get_free(&self, line_id: LineId) -> Result<&usize> {
+        self.free
+            .get(&line_id)
+            .context("this resource does not have the necessary value of free")
     }
 
     pub fn get_binomial(&self, line_id: LineId) -> u128 {

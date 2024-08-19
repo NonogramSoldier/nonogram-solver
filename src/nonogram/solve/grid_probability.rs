@@ -20,7 +20,7 @@ impl<'a> GridProbability<'a> {
         line_memo: Vec<PixelMemo>,
         line_clue: Vec<Description>,
         resources: &SolveResources,
-    ) -> bool {
+    ) -> Result<bool> {
         let solve_line = self
             .line_probabilities
             .entry(line_id)
@@ -32,7 +32,7 @@ impl<'a> GridProbability<'a> {
                 resources.get_color_num(),
             ));
 
-        solve_line.solve(line_memo, line_clue, *resources.get_free(line_id).unwrap())
+        Ok(solve_line.solve(line_memo, line_clue, *resources.get_free(line_id)?))
     }
 }
 
