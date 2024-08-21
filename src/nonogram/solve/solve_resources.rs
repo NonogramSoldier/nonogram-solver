@@ -10,7 +10,7 @@ pub struct SolveResources<'a> {
 }
 
 impl<'a> SolveResources<'a> {
-    pub fn from_puzzle(puzzle: &'a Puzzle) -> Self {
+    pub fn new(puzzle: &'a Puzzle) -> Self {
         let height = puzzle.get_height();
         let width = puzzle.get_width();
         let color_num = puzzle.get_color_num();

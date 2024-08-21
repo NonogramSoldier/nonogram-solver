@@ -17,8 +17,8 @@ impl<'a> GridProbability<'a> {
     fn line_solve(
         &mut self,
         line_id: LineId,
-        line_memo: Vec<PixelMemo>,
-        line_clue: Vec<Description>,
+        line_memo: &Vec<PixelMemo>,
+        line_clue: &Vec<Description>,
         resources: &SolveResources,
     ) -> Result<bool> {
         let solve_line = self
@@ -52,8 +52,8 @@ impl LineProbability {
 
     pub fn solve(
         &mut self,
-        line_memo: Vec<PixelMemo>,
-        line_clue: Vec<Description>,
+        line_memo: &Vec<PixelMemo>,
+        line_clue: &Vec<Description>,
         free: usize,
     ) -> bool {
         if line_clue.len() == 0 {

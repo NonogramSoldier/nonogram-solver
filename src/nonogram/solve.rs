@@ -41,7 +41,7 @@ pub fn solve(puzzle: &Puzzle) -> bool {
     };
 
     let free = line_clue.get_free(10);
-    if line_probability.solve(line_memo, line_clue.descriptions, free) {
+    if line_probability.solve(&line_memo, &line_clue.descriptions, free) {
         println!("{:#?}", line_probability);
     } else {
         println!("muri");

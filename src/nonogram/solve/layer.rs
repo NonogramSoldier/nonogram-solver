@@ -30,18 +30,9 @@ impl Layer {
 
 #[derive(Debug)]
 pub struct LayerPixelMemo {
-    blank_possibility: LayerPossibility,
-    paint_possibilities: Vec<LayerPossibility>,
+    possibles: FxHashMap<usize, Option<LayerRef>>,
 }
 
-#[derive(Debug)]
-enum LayerPossibility {
-    Possible(Option<LayerRef>),
-    Impossible,
-}
-
-impl Default for LayerPossibility {
-    fn default() -> Self {
-        Self::Possible(None)
-    }
+impl LayerPixelMemo {
+    fn make_children(&mut self) {}
 }
