@@ -1,11 +1,41 @@
 use super::*;
 
+use num_integer::binomial;
+
+fn calc_free(length: usize, line_clues: &Vec<LineClue>) -> Vec<usize> {
+    let mut result: Vec<usize> = Default::default();
+
+    for line_clue in line_clues.iter() {
+        let d_num = line_clue.len();
+
+        if d_num == 0 {
+            result.push(1);
+        } else {
+            let mut sep_num = 0;
+            let mut sum = line_clue[0].1;
+            for i in 1..d_num {
+                sum += line_clue[i].1;
+                if line_clue[i - 1].0 == line_clue[i].0 {
+                    sep_num += 1;
+                }
+            }
+            if length < sep_num + sum {
+                result.push(0);
+            } else {
+                result.push(length - sep_num - sum + 1);
+            }
+        }
+    }
+
+    result
+}
+
 #[derive(Debug)]
 pub struct SolveResources<'a> {
     height: usize,
     width: usize,
     color_num: usize,
-    clues: &'a AllClues,
+    clues: &'a (Vec<LineClue>, Vec<LineClue>),
     free: FxHashMap<LineId, usize>,
 }
 
@@ -16,12 +46,12 @@ impl<'a> SolveResources<'a> {
         let color_num = puzzle.get_color_num();
         let mut free = FxHashMap::default();
 
-        for (index, line_clue) in puzzle.clues.row.iter().enumerate() {
-            free.insert(LineId::Row(index), line_clue.get_free(width));
+        for (index, &value) in calc_free(width, &puzzle.clues.0).iter().enumerate() {
+            free.insert(LineId::Row(index), value);
         }
 
-        for (index, line_clue) in puzzle.clues.column.iter().enumerate() {
-            free.insert(LineId::Column(index), line_clue.get_free(height));
+        for (index, &value) in calc_free(height, &puzzle.clues.1).iter().enumerate() {
+            free.insert(LineId::Column(index), value);
         }
 
         Self {
@@ -45,17 +75,28 @@ impl<'a> SolveResources<'a> {
         self.color_num
     }
 
+    fn get_line_clue(&self, line_id: LineId) -> &LineClue {
+        match line_id {
+            LineId::Row(index) => &self.clues.0[index],
+            LineId::Column(index) => &self.clues.1[index],
+        }
+    }
+
     pub fn get_free(&self, line_id: LineId) -> Result<&usize> {
         self.free
             .get(&line_id)
             .context("this resource does not have the necessary value of free")
     }
 
-    pub fn get_binomial(&self, line_id: LineId) -> u128 {
-        self.clues.get_binomial(line_id)
+    pub fn get_binomial(&self, line_id: LineId) -> Result<u128> {
+        let d_num = self.get_line_clue(line_id).len();
+        Ok(binomial(
+            (self.get_free(line_id)? + d_num - 1) as u128,
+            d_num as u128,
+        ))
     }
 
     pub fn show_free(&self) {
-        println!("{:?}", self.free);
+        println!("{:#?}", self.free);
     }
 }

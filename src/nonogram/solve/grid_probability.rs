@@ -18,7 +18,7 @@ impl<'a> GridProbability<'a> {
         &mut self,
         line_id: LineId,
         line_memo: &Vec<PixelMemo>,
-        line_clue: &Vec<Description>,
+        line_clue: &LineClue,
         resources: &SolveResources,
     ) -> Result<bool> {
         let solve_line = self
@@ -53,7 +53,7 @@ impl LineProbability {
     pub fn solve(
         &mut self,
         line_memo: &Vec<PixelMemo>,
-        line_clue: &Vec<Description>,
+        line_clue: &LineClue,
         free: usize,
     ) -> bool {
         if line_clue.len() == 0 {
@@ -73,8 +73,8 @@ impl LineProbability {
                     0
                 } else {
                     description_notes[clue_index - 1].min_index
-                        + line_clue[clue_index - 1].number
-                        + if line_clue[clue_index - 1].color_index == description.color_index {
+                        + line_clue[clue_index - 1].1
+                        + if line_clue[clue_index - 1].0 == description.0 {
                             1
                         } else {
                             0
@@ -87,22 +87,21 @@ impl LineProbability {
                     let mut segment_note: SegmentNote = Default::default();
 
                     if is_first_place {
-                        for index in (0..description.number).rev() {
+                        for index in (0..description.1).rev() {
                             if !line_memo[min_index + index]
                                 .possibles
-                                .contains(&description.color_index)
+                                .contains(&description.0)
                             {
                                 segment_note.block_states = BlockStates::Blocked(index);
                                 break;
                             }
                         }
                     } else {
-                        if !line_memo[min_index + place_index + description.number - 1]
+                        if !line_memo[min_index + place_index + description.1 - 1]
                             .possibles
-                            .contains(&description.color_index)
+                            .contains(&description.0)
                         {
-                            segment_note.block_states =
-                                BlockStates::Blocked(description.number - 1);
+                            segment_note.block_states = BlockStates::Blocked(description.1 - 1);
                         } else {
                             if let BlockStates::Blocked(i) = segments[place_index - 1].block_states
                             {
@@ -128,8 +127,7 @@ impl LineProbability {
                             && description_notes[clue_index - 1].segments[place_index].block_states
                                 == BlockStates::Open
                             && (is_blank_possible
-                                || !(line_clue[clue_index - 1].color_index
-                                    == description.color_index))
+                                || !(line_clue[clue_index - 1].0 == description.0))
                         {
                             segment_note.left_cases +=
                                 description_notes[clue_index - 1].segments[place_index].left_cases;
@@ -154,8 +152,7 @@ impl LineProbability {
                     if is_first_clue && is_first_place {
                         description_notes[clue_index].segments[place_index].right_cases = 1;
                     } else {
-                        let is_blank_possible = line_memo
-                            [min_index + place_index + description.number]
+                        let is_blank_possible = line_memo[min_index + place_index + description.1]
                             .possibles
                             .contains(&0);
 
@@ -168,8 +165,7 @@ impl LineProbability {
                             && description_notes[clue_index + 1].segments[place_index].block_states
                                 == BlockStates::Open
                             && (is_blank_possible
-                                || !(line_clue[clue_index + 1].color_index
-                                    == description.color_index))
+                                || !(line_clue[clue_index + 1].0 == description.0))
                         {
                             description_notes[clue_index].segments[place_index].right_cases +=
                                 description_notes[clue_index + 1].segments[place_index].right_cases;
@@ -194,9 +190,9 @@ impl LineProbability {
                         _ => 0,
                     };
 
-                    for in_segment in 0..description.number {
-                        self.color_cases[min_index + place_index + in_segment]
-                            [description.color_index] += product;
+                    for in_segment in 0..description.1 {
+                        self.color_cases[min_index + place_index + in_segment][description.0] +=
+                            product;
                     }
 
                     if clue_index == 0 {
@@ -225,15 +221,6 @@ impl LineProbability {
 struct DescriptionNote {
     min_index: usize,
     segments: Vec<SegmentNote>,
-}
-
-impl DescriptionNote {
-    fn new(min_index: usize) -> Self {
-        Self {
-            min_index,
-            segments: Default::default(),
-        }
-    }
 }
 
 #[derive(Debug)]

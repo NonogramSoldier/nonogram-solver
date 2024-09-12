@@ -11,6 +11,10 @@ impl LayerRef {
             refer: Rc::new(RefCell::new(Layer::new(parent))),
         }
     }
+
+    fn set_pixel_memo(&mut self, pixel_id: PixelId, color_index: usize) -> bool {
+        todo!()
+    }
 }
 
 #[derive(Debug)]
@@ -26,13 +30,14 @@ impl Layer {
             grid: Default::default(),
         }
     }
+
+    fn set_pixel_memo(&mut self, pixel_id: PixelId, color_index: usize) -> bool {
+        todo!()
+    }
 }
 
 #[derive(Debug)]
 pub struct LayerPixelMemo {
-    possibles: FxHashMap<usize, Option<LayerRef>>,
-}
-
-impl LayerPixelMemo {
-    fn make_children(&mut self) {}
+    possibles: FxHashSet<usize>,
+    children: FxHashMap<usize, LayerRef>,
 }

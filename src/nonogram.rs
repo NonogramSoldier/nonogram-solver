@@ -6,8 +6,8 @@ use std::io::BufReader;
 
 #[derive(Debug, Deserialize)]
 pub struct Puzzle {
-    colors: Vec<Color>,
-    clues: AllClues,
+    colors: Vec<String>,
+    clues: (Vec<LineClue>, Vec<LineClue>),
 }
 
 impl Puzzle {
@@ -24,24 +24,4 @@ impl Puzzle {
     }
 }
 
-#[derive(Debug, Deserialize)]
-struct Color {
-    name: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct AllClues {
-    row: Vec<LineClue>,
-    column: Vec<LineClue>,
-}
-
-#[derive(Debug, Deserialize)]
-struct LineClue {
-    descriptions: Vec<Description>,
-}
-
-#[derive(Debug, Deserialize)]
-struct Description {
-    color_index: usize,
-    number: usize,
-}
+type LineClue = Vec<(usize, usize)>;

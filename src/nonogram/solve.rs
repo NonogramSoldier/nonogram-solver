@@ -8,40 +8,55 @@ use anyhow::{Context, Result};
 use fxhash::{FxHashMap, FxHashSet};
 use grid_probability::{GridProbability, LineProbability};
 use layer::LayerRef;
-use num_integer::binomial;
 use solve_resources::SolveResources;
 
 use super::*;
 
-pub fn solve(puzzle: &Puzzle) -> bool {
-    // let resources = SolveResources::from_puzzle(puzzle);
+pub fn solve(puzzle: &Puzzle) -> Result<bool> {
+    // let resources = SolveResources::new(puzzle);
     // resources.show_free();
+    // for index in 0..resources.get_height() {
+    //     println!(
+    //         "row({}): {}",
+    //         index,
+    //         resources.get_binomial(LineId::Row(index))?
+    //     );
+    // }
 
-    let mut line_probability = LineProbability::new(10, 2);
-    let mut line_memo = vec![PixelMemo::new(2); 10];
+    let length = 10;
+    let color_num = 2;
 
-    line_memo[5].possibles.remove(&0);
-    line_memo[7].possibles.remove(&0);
+    let mut line_probability = LineProbability::new(length, color_num);
+    let mut line_memo = vec![PixelMemo::new(color_num); length];
 
-    let line_clue = LineClue {
-        descriptions: vec![
-            Description {
-                color_index: 1,
-                number: 1,
-            },
-            Description {
-                color_index: 1,
-                number: 3,
-            },
-            Description {
-                color_index: 1,
-                number: 2,
-            },
-        ],
+    // line_memo[5].possibles.remove(&0);
+    // line_memo[7].possibles.remove(&0);
+
+    let line_clue: LineClue = vec![(1, 1), (1, 3), (1, 2)];
+
+    let free = {
+        let d_num = line_clue.len();
+
+        if d_num == 0 {
+            1
+        } else {
+            let mut sep_num = 0;
+            let mut sum = line_clue[0].1;
+            for i in 1..d_num {
+                sum += line_clue[i].1;
+                if line_clue[i - 1].0 == line_clue[i].0 {
+                    sep_num += 1;
+                }
+            }
+            if length < sep_num + sum {
+                0
+            } else {
+                length - sep_num - sum + 1
+            }
+        }
     };
 
-    let free = line_clue.get_free(10);
-    if line_probability.solve(&line_memo, &line_clue.descriptions, free) {
+    if line_probability.solve(&line_memo, &line_clue, free) {
         println!("{:#?}", line_probability);
     } else {
         println!("muri");
@@ -54,84 +69,20 @@ pub fn solve(puzzle: &Puzzle) -> bool {
     // let mut layer_solver = LayerSolver::new(&resources, None, None, true);
     // layer_solver.init()?;
     // layer_solver.show_blank_possibility();
-    true
+    Ok(true)
 }
 
 impl Puzzle {
     fn get_height(&self) -> usize {
-        self.clues.get_height()
+        self.clues.0.len()
     }
 
     fn get_width(&self) -> usize {
-        self.clues.get_width()
+        self.clues.1.len()
     }
 
     fn get_color_num(&self) -> usize {
         self.colors.len()
-    }
-}
-
-impl AllClues {
-    fn get_height(&self) -> usize {
-        self.row.len()
-    }
-
-    fn get_width(&self) -> usize {
-        self.column.len()
-    }
-
-    fn get_binomial(&self, line_id: LineId) -> u128 {
-        match line_id {
-            LineId::Row(i) => self.row[i].get_binomial(self.get_width()),
-            LineId::Column(i) => self.column[i].get_binomial(self.get_height()),
-        }
-    }
-}
-
-impl LineClue {
-    fn get_binomial(&self, length: usize) -> u128 {
-        let d_num = self.descriptions.len();
-
-        if d_num == 0 {
-            1
-        } else {
-            let mut sep_num = 0;
-            let mut sum = self.descriptions[0].number;
-            for i in 1..d_num {
-                sum += self.descriptions[i].number;
-                if self.descriptions[i - 1].color_index == self.descriptions[i].color_index {
-                    sep_num += 1;
-                }
-            }
-
-            if length < sep_num + sum {
-                0
-            } else {
-                binomial((length - sep_num - sum + d_num) as u128, d_num as u128)
-            }
-        }
-    }
-
-    fn get_free(&self, length: usize) -> usize {
-        let d_num = self.descriptions.len();
-
-        if d_num == 0 {
-            1
-        } else {
-            let mut sep_num = 0;
-            let mut sum = self.descriptions[0].number;
-            for i in 1..d_num {
-                sum += self.descriptions[i].number;
-                if self.descriptions[i - 1].color_index == self.descriptions[i].color_index {
-                    sep_num += 1;
-                }
-            }
-            if length < sep_num + sum {
-                0
-            } else {
-                length - sep_num - sum + 1
-            }
-        }
     }
 }
 
@@ -144,19 +95,19 @@ pub struct LayerSolver<'a> {
 }
 
 impl<'a> LayerSolver<'a> {
-    fn new(
-        resources: &'a SolveResources,
-        layer_parent: Option<LayerRef>,
-        probability_parent: Option<&'a GridProbability<'a>>,
-        is_base_layer: bool,
-    ) -> Self {
-        Self {
-            resources,
-            layer: LayerRef::new(layer_parent),
-            grid_probability: GridProbability::new(probability_parent),
-            is_base_layer,
-        }
-    }
+    // fn new(
+    //     resources: &'a SolveResources,
+    //     layer_parent: Option<LayerRef>,
+    //     probability_parent: Option<&'a GridProbability<'a>>,
+    //     is_base_layer: bool,
+    // ) -> Self {
+    //     Self {
+    //         resources,
+    //         layer: LayerRef::new(layer_parent),
+    //         grid_probability: GridProbability::new(probability_parent),
+    //         is_base_layer,
+    //     }
+    // }
 
     // fn init(&mut self) -> Result<()> {
     //     let mut vec: Vec<(LineId, Reverse<u128>)> = Vec::new();
