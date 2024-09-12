@@ -95,15 +95,15 @@ where
         if self.heap.len() == 0 {
             return None;
         }
-        
+
         self.map.remove(&self.heap[0].0);
 
         if self.heap.len() == 1 {
             return self.heap.pop();
         }
-        
+
         self.swap_node(0, self.heap.len() - 1);
-        
+
         let result = self.heap.pop();
         self.sift_down(0);
         result
