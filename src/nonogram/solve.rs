@@ -4,7 +4,6 @@ mod solve_resources;
 
 use std::{cell::RefCell, rc::Rc};
 
-use anyhow::{Context, Result};
 use fxhash::{FxHashMap, FxHashSet};
 use grid_probability::{GridProbability, LineProbability};
 use layer::LayerRef;
@@ -13,54 +12,70 @@ use solve_resources::SolveResources;
 use super::*;
 
 pub fn solve(puzzle: &Puzzle) -> Result<bool> {
-    // let resources = SolveResources::new(puzzle);
-    // resources.show_free();
-    // for index in 0..resources.get_height() {
-    //     println!(
-    //         "row({}): {}",
-    //         index,
-    //         resources.get_binomial(LineId::Row(index))?
-    //     );
-    // }
-
-    let length = 10;
-    let color_num = 2;
-
-    let mut line_probability = LineProbability::new(length, color_num);
-    let mut line_memo = vec![PixelMemo::new(color_num); length];
-
-    // line_memo[5].possibles.remove(&0);
-    // line_memo[7].possibles.remove(&0);
-
-    let line_clue: LineClue = vec![(1, 1), (1, 3), (1, 2)];
-
-    let free = {
-        let d_num = line_clue.len();
-
-        if d_num == 0 {
-            1
-        } else {
-            let mut sep_num = 0;
-            let mut sum = line_clue[0].1;
-            for i in 1..d_num {
-                sum += line_clue[i].1;
-                if line_clue[i - 1].0 == line_clue[i].0 {
-                    sep_num += 1;
-                }
-            }
-            if length < sep_num + sum {
-                0
-            } else {
-                length - sep_num - sum + 1
-            }
-        }
-    };
-
-    if line_probability.solve(&line_memo, &line_clue, free) {
-        println!("{:#?}", line_probability);
-    } else {
-        println!("muri");
+    let resources = SolveResources::new(puzzle);
+    resources.show_free();
+    for index in 0..resources.get_height() {
+        println!(
+            "row({}): {}",
+            index,
+            resources.get_binomial(LineId::Row(index))?
+        );
     }
+
+    // let length = 15;
+    // let color_num = 2;
+
+    // let mut line_probability = LineProbability::new(length, color_num);
+    // let mut line_memo = vec![PixelMemo::new(color_num); length];
+
+    // line_memo[7].possibles.remove(&0);
+    // line_memo[8].possibles.remove(&0);
+    // line_memo[10].possibles.remove(&0);
+    // line_memo[11].possibles.remove(&0);
+
+    // // let line_clue: LineClue = vec![(1, 2), (1, 1), (1, 5)];
+    // let line_clue: LineClue = vec![
+    //     Description {
+    //         color_index: 1,
+    //         number: 2,
+    //     },
+    //     Description {
+    //         color_index: 1,
+    //         number: 1,
+    //     },
+    //     Description {
+    //         color_index: 1,
+    //         number: 5,
+    //     },
+    // ];
+
+    // let free = {
+    //     let d_num = line_clue.len();
+
+    //     if d_num == 0 {
+    //         1
+    //     } else {
+    //         let mut sep_num = 0;
+    //         let mut sum = line_clue[0].number;
+    //         for i in 1..d_num {
+    //             sum += line_clue[i].number;
+    //             if line_clue[i - 1].color_index == line_clue[i].color_index {
+    //                 sep_num += 1;
+    //             }
+    //         }
+    //         if length < sep_num + sum {
+    //             0
+    //         } else {
+    //             length - sep_num - sum + 1
+    //         }
+    //     }
+    // };
+
+    // if line_probability.solve(&line_memo, &line_clue, free) {
+    //     println!("{:#?}", line_probability);
+    // } else {
+    //     println!("muri");
+    // }
 
     // for pixel_id in PixelIterator::new(LineId::Row(3), &solve_resources) {
     //     println!("{:?}", pixel_id);

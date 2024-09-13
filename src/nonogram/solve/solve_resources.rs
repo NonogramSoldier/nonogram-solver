@@ -12,10 +12,10 @@ fn calc_free(length: usize, line_clues: &Vec<LineClue>) -> Vec<usize> {
             result.push(1);
         } else {
             let mut sep_num = 0;
-            let mut sum = line_clue[0].1;
+            let mut sum = line_clue[0].number;
             for i in 1..d_num {
-                sum += line_clue[i].1;
-                if line_clue[i - 1].0 == line_clue[i].0 {
+                sum += line_clue[i].number;
+                if line_clue[i - 1].color_index == line_clue[i].color_index {
                     sep_num += 1;
                 }
             }

@@ -73,8 +73,8 @@ impl LineProbability {
                     0
                 } else {
                     description_notes[clue_index - 1].min_index
-                        + line_clue[clue_index - 1].1
-                        + if line_clue[clue_index - 1].0 == description.0 {
+                        + line_clue[clue_index - 1].number
+                        + if line_clue[clue_index - 1].color_index == description.color_index {
                             1
                         } else {
                             0
@@ -87,21 +87,21 @@ impl LineProbability {
                     let mut segment_note: SegmentNote = Default::default();
 
                     if is_first_place {
-                        for index in (0..description.1).rev() {
+                        for index in (0..description.number).rev() {
                             if !line_memo[min_index + index]
                                 .possibles
-                                .contains(&description.0)
+                                .contains(&description.color_index)
                             {
                                 segment_note.block_states = BlockStates::Blocked(index);
                                 break;
                             }
                         }
                     } else {
-                        if !line_memo[min_index + place_index + description.1 - 1]
+                        if !line_memo[min_index + place_index + description.number - 1]
                             .possibles
-                            .contains(&description.0)
+                            .contains(&description.color_index)
                         {
-                            segment_note.block_states = BlockStates::Blocked(description.1 - 1);
+                            segment_note.block_states = BlockStates::Blocked(description.number - 1);
                         } else {
                             if let BlockStates::Blocked(i) = segments[place_index - 1].block_states
                             {
@@ -127,7 +127,7 @@ impl LineProbability {
                             && description_notes[clue_index - 1].segments[place_index].block_states
                                 == BlockStates::Open
                             && (is_blank_possible
-                                || !(line_clue[clue_index - 1].0 == description.0))
+                                || !(line_clue[clue_index - 1].color_index == description.color_index))
                         {
                             segment_note.left_cases +=
                                 description_notes[clue_index - 1].segments[place_index].left_cases;
@@ -152,7 +152,7 @@ impl LineProbability {
                     if is_first_clue && is_first_place {
                         description_notes[clue_index].segments[place_index].right_cases = 1;
                     } else {
-                        let is_blank_possible = line_memo[min_index + place_index + description.1]
+                        let is_blank_possible = line_memo[min_index + place_index + description.number]
                             .possibles
                             .contains(&0);
 
@@ -165,7 +165,7 @@ impl LineProbability {
                             && description_notes[clue_index + 1].segments[place_index].block_states
                                 == BlockStates::Open
                             && (is_blank_possible
-                                || !(line_clue[clue_index + 1].0 == description.0))
+                                || !(line_clue[clue_index + 1].color_index == description.color_index))
                         {
                             description_notes[clue_index].segments[place_index].right_cases +=
                                 description_notes[clue_index + 1].segments[place_index].right_cases;
@@ -190,8 +190,8 @@ impl LineProbability {
                         _ => 0,
                     };
 
-                    for in_segment in 0..description.1 {
-                        self.color_cases[min_index + place_index + in_segment][description.0] +=
+                    for in_segment in 0..description.number {
+                        self.color_cases[min_index + place_index + in_segment][description.color_index] +=
                             product;
                     }
 

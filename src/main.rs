@@ -3,12 +3,13 @@
 
 use std::io::stdin;
 
+use anyhow::Result;
 use nonogram::{solve::solve, Puzzle};
 
 mod nonogram;
 mod priority_queue;
 
-fn main() {
+fn main() -> Result<()> {
     println!("Type a puzzle name.");
     let mut puzzle_name = String::new();
     stdin()
@@ -16,9 +17,11 @@ fn main() {
         .expect("Faild to read line.");
     let puzzle_name = puzzle_name.trim();
 
-    let puzzle = Puzzle::new(puzzle_name);
+    let puzzle = Puzzle::from_json(puzzle_name)?;
 
-    // println!("{:#?}", puzzle);
+    println!("{:#?}", puzzle);
 
-    solve(&puzzle);
+    solve(&puzzle)?;
+
+    Ok(())
 }

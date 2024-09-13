@@ -1,6 +1,8 @@
 pub mod solve;
 
+use anyhow::{Context, Result};
 use serde::Deserialize;
+use serde_tuple::Deserialize_tuple;
 use std::fs::File;
 use std::io::BufReader;
 
@@ -11,17 +13,23 @@ pub struct Puzzle {
 }
 
 impl Puzzle {
-    pub fn new(puzzle_name: &str) -> Self {
+    pub fn from_json(puzzle_name: &str) -> Result<Self> {
         let path = &format!("puzzles/{}.json", puzzle_name);
-        let file = File::open(path).expect(&format!("Cannot open the path {}", path));
+        let file = File::open(path).with_context(|| format!("Cannot open the path {}", path))?;
 
         let reader = BufReader::new(file);
 
         let puzzle: Puzzle =
-            serde_json::from_reader(reader).expect("The JSON file has an unexpected structure.");
+            serde_json::from_reader(reader).context("The JSON file has an unexpected structure")?;
 
-        puzzle
+        Ok(puzzle)
     }
 }
 
-type LineClue = Vec<(usize, usize)>;
+type LineClue = Vec<Description>;
+
+#[derive(Debug, Deserialize_tuple)]
+struct Description {
+    color_index: usize,
+    number: usize,
+}
