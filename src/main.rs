@@ -19,7 +19,7 @@ fn main() -> Result<()> {
 
     let puzzle = Puzzle::from_json(puzzle_name)?;
 
-    println!("{:#?}", puzzle);
+    // println!("{:#?}", puzzle);
 
     solve(&puzzle)?;
 

@@ -14,15 +14,10 @@ impl LineProbability {
         }
     }
 
-    pub fn solve(
-        &mut self,
-        line_memo: &Vec<PixelMemo>,
-        line_clue: &LineClue,
-        free: usize,
-    ) -> bool {
+    pub fn solve(&mut self, line_memo: &Vec<usize>, line_clue: &LineClue, free: usize) -> bool {
         if line_clue.len() == 0 {
             for (index, memo) in line_memo.iter().enumerate() {
-                if !memo.possibles.contains(&0) {
+                if memo & 1 == 0 {
                     return false;
                 }
                 self.color_cases[index][0] = 1;
@@ -52,20 +47,21 @@ impl LineProbability {
 
                     if is_first_place {
                         for index in (0..description.number).rev() {
-                            if !line_memo[min_index + index]
-                                .possibles
-                                .contains(&description.color_index)
-                            {
+                            // if !line_memo[min_index + index]
+                            //     .possibles
+                            //     .contains(&description.color_index)
+                            if line_memo[min_index + index] & (1 << description.color_index) == 0 {
                                 segment_note.block_states = BlockStates::Blocked(index);
                                 break;
                             }
                         }
                     } else {
-                        if !line_memo[min_index + place_index + description.number - 1]
-                            .possibles
-                            .contains(&description.color_index)
+                        if line_memo[min_index + place_index + description.number - 1]
+                            & (1 << description.color_index)
+                            == 0
                         {
-                            segment_note.block_states = BlockStates::Blocked(description.number - 1);
+                            segment_note.block_states =
+                                BlockStates::Blocked(description.number - 1);
                         } else {
                             if let BlockStates::Blocked(i) = segments[place_index - 1].block_states
                             {
@@ -79,9 +75,7 @@ impl LineProbability {
                     if is_first_clue && is_first_place {
                         segment_note.left_cases = 1;
                     } else {
-                        let is_blank_possible = line_memo[min_index + place_index - 1]
-                            .possibles
-                            .contains(&0);
+                        let is_blank_possible = line_memo[min_index + place_index - 1] & 1 == 1;
 
                         if is_blank_possible && !is_first_place {
                             segment_note.left_cases = segments[place_index - 1].left_cases;
@@ -91,7 +85,8 @@ impl LineProbability {
                             && description_notes[clue_index - 1].segments[place_index].block_states
                                 == BlockStates::Open
                             && (is_blank_possible
-                                || !(line_clue[clue_index - 1].color_index == description.color_index))
+                                || !(line_clue[clue_index - 1].color_index
+                                    == description.color_index))
                         {
                             segment_note.left_cases +=
                                 description_notes[clue_index - 1].segments[place_index].left_cases;
@@ -116,9 +111,8 @@ impl LineProbability {
                     if is_first_clue && is_first_place {
                         description_notes[clue_index].segments[place_index].right_cases = 1;
                     } else {
-                        let is_blank_possible = line_memo[min_index + place_index + description.number]
-                            .possibles
-                            .contains(&0);
+                        let is_blank_possible =
+                            line_memo[min_index + place_index + description.number] & 1 == 1;
 
                         if is_blank_possible && !is_first_place {
                             description_notes[clue_index].segments[place_index].right_cases =
@@ -129,7 +123,8 @@ impl LineProbability {
                             && description_notes[clue_index + 1].segments[place_index].block_states
                                 == BlockStates::Open
                             && (is_blank_possible
-                                || !(line_clue[clue_index + 1].color_index == description.color_index))
+                                || !(line_clue[clue_index + 1].color_index
+                                    == description.color_index))
                         {
                             description_notes[clue_index].segments[place_index].right_cases +=
                                 description_notes[clue_index + 1].segments[place_index].right_cases;
@@ -155,8 +150,8 @@ impl LineProbability {
                     };
 
                     for in_segment in 0..description.number {
-                        self.color_cases[min_index + place_index + in_segment][description.color_index] +=
-                            product;
+                        self.color_cases[min_index + place_index + in_segment]
+                            [description.color_index] += product;
                     }
 
                     if clue_index == 0 {
