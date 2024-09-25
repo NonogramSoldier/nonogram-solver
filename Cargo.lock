@@ -4,9 +4,9 @@ version = 3
 
 [[package]]
 name = "anyhow"
-version = "1.0.88"
+version = "1.0.89"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e1496f8fb1fbf272686b8d37f523dab3e4a7443300055e74cdaa449f3114356"
+checksum = "86fdf8605db99b54d3cd748a44c6d04df638eb5dafb219b135d0149bd0db01f6"
 
 [[package]]
 name = "autocfg"
@@ -129,9 +129,9 @@ dependencies = [
 
 [[package]]
 name = "serde_tuple"
-version = "0.5.0"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4f025b91216f15a2a32aa39669329a475733590a015835d1783549a56d09427"
+checksum = "5991beac1639af3c125efc081bb53e8ca04dd243ad84832799db89b930e537cc"
 dependencies = [
  "serde",
  "serde_tuple_macros",
@@ -139,9 +139,9 @@ dependencies = [
 
 [[package]]
 name = "serde_tuple_macros"
-version = "0.5.0"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4076151d1a2b688e25aaf236997933c66e18b870d0369f8b248b8ab2be630d7e"
+checksum = "0a418ec717f9e70ce0261268e41367429f97af6a04b58c7e6159128a011c6cfa"
 dependencies = [
  "proc-macro2",
  "quote",

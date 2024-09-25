@@ -1,42 +1,6 @@
 use super::*;
 
 #[derive(Debug)]
-pub struct GridProbability<'a> {
-    parent: Option<&'a GridProbability<'a>>,
-    line_probabilities: FxHashMap<LineId, LineProbability>,
-}
-
-impl<'a> GridProbability<'a> {
-    pub fn new(parent: Option<&'a GridProbability<'a>>) -> Self {
-        Self {
-            parent,
-            line_probabilities: Default::default(),
-        }
-    }
-
-    fn line_solve(
-        &mut self,
-        line_id: LineId,
-        line_memo: &Vec<PixelMemo>,
-        line_clue: &LineClue,
-        resources: &SolveResources,
-    ) -> Result<bool> {
-        let solve_line = self
-            .line_probabilities
-            .entry(line_id)
-            .or_insert(LineProbability::new(
-                match line_id {
-                    LineId::Row(_) => resources.get_width(),
-                    LineId::Column(_) => resources.get_height(),
-                },
-                resources.get_color_num(),
-            ));
-
-        Ok(solve_line.solve(line_memo, line_clue, *resources.get_free(line_id)?))
-    }
-}
-
-#[derive(Debug, Clone)]
 pub struct LineProbability {
     color_cases: Vec<Vec<u128>>,
     painting_count: u128,

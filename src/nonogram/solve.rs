@@ -1,12 +1,8 @@
-mod grid_probability;
-mod layer;
+mod line_probability;
 mod solve_resources;
 
-use std::{cell::RefCell, rc::Rc};
-
 use fxhash::{FxHashMap, FxHashSet};
-use grid_probability::{GridProbability, LineProbability};
-use layer::LayerRef;
+use line_probability::LineProbability;
 use solve_resources::SolveResources;
 
 use super::*;
@@ -103,10 +99,9 @@ impl Puzzle {
 
 #[derive(Debug)]
 pub struct LayerSolver<'a> {
-    resources: &'a SolveResources<'a>,
-    layer: LayerRef,
-    grid_probability: GridProbability<'a>,
-    is_base_layer: bool,
+    parent: &'a LayerSolver<'a>,
+    grid: FxHashMap<PixelId, PixelMemo>,
+    line_probabilities: FxHashMap<LineId, LineProbability>,
 }
 
 impl<'a> LayerSolver<'a> {
@@ -290,7 +285,7 @@ impl Iterator for PixelIterator {
 
 type Priority = f64;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct PixelMemo {
     possibles: FxHashSet<usize>,
 }

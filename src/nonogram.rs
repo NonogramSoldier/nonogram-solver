@@ -19,10 +19,7 @@ impl Puzzle {
 
         let reader = BufReader::new(file);
 
-        let puzzle: Puzzle =
-            serde_json::from_reader(reader).context("The JSON file has an unexpected structure")?;
-
-        Ok(puzzle)
+        serde_json::from_reader(reader).context("The JSON file has an unexpected structure")
     }
 }
 
