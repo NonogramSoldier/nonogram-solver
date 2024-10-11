@@ -1,6 +1,7 @@
+use num_integer::binomial;
+
 use super::*;
 
-use num_integer::binomial;
 
 fn calc_free(length: usize, line_clues: &Vec<LineClue>) -> Vec<usize> {
     let mut result: Vec<usize> = Default::default();

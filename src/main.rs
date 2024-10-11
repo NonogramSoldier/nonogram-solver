@@ -1,10 +1,9 @@
 #![deny(clippy::all)]
 #![warn(clippy::pedantic)]
 
-use std::io::stdin;
-
 use anyhow::Result;
 use nonogram::{solve::solve, Puzzle};
+use std::io::stdin;
 
 mod nonogram;
 mod priority_queue;
