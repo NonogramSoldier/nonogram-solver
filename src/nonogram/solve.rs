@@ -80,24 +80,114 @@ pub fn solve(puzzle: &Puzzle) -> Result<bool> {
     // let vec = vec![("a", 10), ("s", 8), ("y", 2)];
     // let mut queue: FxPriorityQueue<&str, usize> = FxPriorityQueue::new_heapify(vec);
     let mut root = LayerSolver::new(None, &resources);
-    root.grid.insert(PixelId{ row_index: 0, column_index: 0 }, 10);
-    root.grid.insert(PixelId{ row_index: 1, column_index: 0 }, 20);
-    root.grid.insert(PixelId{ row_index: 2, column_index: 0 }, 30);
-    root.grid.insert(PixelId{ row_index: 3, column_index: 0 }, 40);
-    root.grid.insert(PixelId{ row_index: 4, column_index: 0 }, 50);
+    root.grid.insert(
+        PixelId {
+            row_index: 0,
+            column_index: 0,
+        },
+        10,
+    );
+    root.grid.insert(
+        PixelId {
+            row_index: 1,
+            column_index: 0,
+        },
+        20,
+    );
+    root.grid.insert(
+        PixelId {
+            row_index: 2,
+            column_index: 0,
+        },
+        30,
+    );
+    root.grid.insert(
+        PixelId {
+            row_index: 3,
+            column_index: 0,
+        },
+        40,
+    );
+    root.grid.insert(
+        PixelId {
+            row_index: 4,
+            column_index: 0,
+        },
+        50,
+    );
 
     let mut child1 = LayerSolver::new(Some(&root), &resources);
-    child1.grid.insert(PixelId{ row_index: 0, column_index: 0 }, 20);
-    child1.grid.insert(PixelId{ row_index: 0, column_index: 1 }, 30);
-    child1.grid.insert(PixelId{ row_index: 0, column_index: 2 }, 40);
-    child1.grid.insert(PixelId{ row_index: 0, column_index: 3 }, 50);
-    child1.grid.insert(PixelId{ row_index: 0, column_index: 4 }, 60);
+    child1.grid.insert(
+        PixelId {
+            row_index: 0,
+            column_index: 0,
+        },
+        20,
+    );
+    child1.grid.insert(
+        PixelId {
+            row_index: 0,
+            column_index: 1,
+        },
+        30,
+    );
+    child1.grid.insert(
+        PixelId {
+            row_index: 0,
+            column_index: 2,
+        },
+        40,
+    );
+    child1.grid.insert(
+        PixelId {
+            row_index: 0,
+            column_index: 3,
+        },
+        50,
+    );
+    child1.grid.insert(
+        PixelId {
+            row_index: 0,
+            column_index: 4,
+        },
+        60,
+    );
 
-    println!("{}", child1.cache_memo(PixelId{ row_index: 0, column_index: 0 }));
-    println!("{}", child1.cache_memo(PixelId{ row_index: 1, column_index: 0 }));
-    println!("{}", child1.cache_memo(PixelId{ row_index: 2, column_index: 0 }));
-    println!("{}", child1.cache_memo(PixelId{ row_index: 3, column_index: 0 }));
-    println!("{}", child1.cache_memo(PixelId{ row_index: 5, column_index: 0 }));
+    println!(
+        "{}",
+        child1.cache_memo(PixelId {
+            row_index: 0,
+            column_index: 0
+        })
+    );
+    println!(
+        "{}",
+        child1.cache_memo(PixelId {
+            row_index: 1,
+            column_index: 0
+        })
+    );
+    println!(
+        "{}",
+        child1.cache_memo(PixelId {
+            row_index: 2,
+            column_index: 0
+        })
+    );
+    println!(
+        "{}",
+        child1.cache_memo(PixelId {
+            row_index: 3,
+            column_index: 0
+        })
+    );
+    println!(
+        "{}",
+        child1.cache_memo(PixelId {
+            row_index: 5,
+            column_index: 0
+        })
+    );
     println!("{:#?}", child1.grid_cache);
 
     // for pixel_id in PixelIterator::new(LineId::Row(3), &solve_resources) {
@@ -155,7 +245,7 @@ impl<'a> LayerSolver<'a> {
                     let memo = self.get_ancestral_memo(pixel_id);
                     self.grid_cache.insert(pixel_id, memo);
                     memo
-                },
+                }
             },
         }
     }
