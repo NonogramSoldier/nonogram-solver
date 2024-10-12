@@ -1,15 +1,16 @@
 mod line_probability;
 mod solve_resources;
 
-use fxhash::{FxHashMap, FxHashSet};
+use crate::priority_queue::FxPriorityQueue;
+use anyhow::Ok;
+use fxhash::FxHashMap;
 use line_probability::LineProbability;
 use solve_resources::SolveResources;
-use crate::priority_queue::{FxPriorityQueue, PriorityQueue};
 
 use super::*;
 
 pub fn solve(puzzle: &Puzzle) -> Result<bool> {
-    // let resources = SolveResources::new(puzzle);
+    let resources = SolveResources::new(puzzle);
     // resources.show_free();
     // for index in 0..resources.get_height() {
     //     println!(
@@ -78,14 +79,26 @@ pub fn solve(puzzle: &Puzzle) -> Result<bool> {
 
     // let vec = vec![("a", 10), ("s", 8), ("y", 2)];
     // let mut queue: FxPriorityQueue<&str, usize> = FxPriorityQueue::new_heapify(vec);
-    let mut queue = FxPriorityQueue::new();
-    queue.add_or_insert("a", 10);
-    queue.add_or_insert("s", 8);
-    queue.add_or_insert("y", 2);
-    queue.add_or_insert("a", -10);
-    println!("{:?}", queue.pop().unwrap());
-    println!("{:?}", queue.pop().unwrap());
-    println!("{:?}", queue.pop().unwrap());
+    let mut root = LayerSolver::new(None, &resources);
+    root.grid.insert(PixelId{ row_index: 0, column_index: 0 }, 10);
+    root.grid.insert(PixelId{ row_index: 1, column_index: 0 }, 20);
+    root.grid.insert(PixelId{ row_index: 2, column_index: 0 }, 30);
+    root.grid.insert(PixelId{ row_index: 3, column_index: 0 }, 40);
+    root.grid.insert(PixelId{ row_index: 4, column_index: 0 }, 50);
+
+    let mut child1 = LayerSolver::new(Some(&root), &resources);
+    child1.grid.insert(PixelId{ row_index: 0, column_index: 0 }, 20);
+    child1.grid.insert(PixelId{ row_index: 0, column_index: 1 }, 30);
+    child1.grid.insert(PixelId{ row_index: 0, column_index: 2 }, 40);
+    child1.grid.insert(PixelId{ row_index: 0, column_index: 3 }, 50);
+    child1.grid.insert(PixelId{ row_index: 0, column_index: 4 }, 60);
+
+    println!("{}", child1.cache_memo(PixelId{ row_index: 0, column_index: 0 }));
+    println!("{}", child1.cache_memo(PixelId{ row_index: 1, column_index: 0 }));
+    println!("{}", child1.cache_memo(PixelId{ row_index: 2, column_index: 0 }));
+    println!("{}", child1.cache_memo(PixelId{ row_index: 3, column_index: 0 }));
+    println!("{}", child1.cache_memo(PixelId{ row_index: 5, column_index: 0 }));
+    println!("{:#?}", child1.grid_cache);
 
     // for pixel_id in PixelIterator::new(LineId::Row(3), &solve_resources) {
     //     println!("{:?}", pixel_id);
@@ -113,24 +126,61 @@ impl Puzzle {
 
 #[derive(Debug)]
 pub struct LayerSolver<'a> {
+    resources: &'a SolveResources<'a>,
     parent: Option<&'a LayerSolver<'a>>,
     grid: FxHashMap<PixelId, usize>,
-    grid_cashe: FxHashMap<PixelId, usize>,
+    grid_cache: FxHashMap<PixelId, usize>,
     line_probabilities: FxHashMap<LineId, LineProbability>,
-    line_cashe: FxHashMap<LineId, &'a LineProbability>,
+    line_cache: FxHashMap<LineId, &'a LineProbability>,
 }
 
 impl<'a> LayerSolver<'a> {
-    fn new(
-        parent: Option<&'a LayerSolver<'a>>,
-    ) -> Self {
+    fn new(parent: Option<&'a LayerSolver<'a>>, resources: &'a SolveResources<'a>) -> Self {
         Self {
+            resources,
             parent,
             grid: Default::default(),
-            grid_cashe: Default::default(),
+            grid_cache: Default::default(),
             line_probabilities: Default::default(),
-            line_cashe: Default::default(),
+            line_cache: Default::default(),
         }
+    }
+
+    fn cache_memo(&mut self, pixel_id: PixelId) -> usize {
+        match self.grid.get(&pixel_id) {
+            Some(&memo) => memo,
+            None => match self.grid_cache.get(&pixel_id) {
+                Some(&memo) => memo,
+                None => {
+                    let memo = self.get_ancestral_memo(pixel_id);
+                    self.grid_cache.insert(pixel_id, memo);
+                    memo
+                },
+            },
+        }
+    }
+
+    fn get_ancestral_memo(&self, pixel_id: PixelId) -> usize {
+        match self.parent {
+            Some(parent) => match parent.grid.get(&pixel_id) {
+                Some(&memo) => memo,
+                None => match parent.grid_cache.get(&pixel_id) {
+                    Some(&memo) => memo,
+                    None => parent.get_ancestral_memo(pixel_id),
+                },
+            },
+            None => self.resources.get_uncertain_memo(),
+        }
+        // let parent = self
+        //     .parent
+        //     .with_context(|| format!("Cannot find pixel memo. pixel_id: {:?}", pixel_id))?;
+        // match parent.grid.get(&pixel_id) {
+        //     Some(&memo) => Ok(memo),
+        //     None => match parent.grid_cache.get(&pixel_id) {
+        //         Some(&memo) => Ok(memo),
+        //         None => parent.get_ancestral_memo(pixel_id),
+        //     },
+        // }
     }
 
     // fn init(&mut self) -> Result<()> {
@@ -262,13 +312,10 @@ struct PixelIterator {
 }
 
 impl PixelIterator {
-    fn new(line_id: LineId, resources: &SolveResources) -> Self {
+    fn new(line_id: LineId, length: usize) -> Self {
         Self {
             current: 0,
-            end: match line_id {
-                LineId::Row(_) => resources.get_width(),
-                LineId::Column(_) => resources.get_height(),
-            },
+            end: length,
             line_id,
         }
     }

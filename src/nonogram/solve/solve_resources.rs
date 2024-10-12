@@ -2,7 +2,6 @@ use num_integer::binomial;
 
 use super::*;
 
-
 fn calc_free(length: usize, line_clues: &Vec<LineClue>) -> Vec<usize> {
     let mut result: Vec<usize> = Default::default();
 
@@ -36,6 +35,7 @@ pub struct SolveResources<'a> {
     height: usize,
     width: usize,
     color_num: usize,
+    uncertain_memo: usize,
     clues: &'a (Vec<LineClue>, Vec<LineClue>),
     free: FxHashMap<LineId, usize>,
 }
@@ -45,6 +45,7 @@ impl<'a> SolveResources<'a> {
         let height = puzzle.get_height();
         let width = puzzle.get_width();
         let color_num = puzzle.get_color_num();
+        let uncertain_memo = (1 << color_num) - 1;
         let mut free = FxHashMap::default();
 
         for (index, &value) in calc_free(width, &puzzle.clues.0).iter().enumerate() {
@@ -59,6 +60,7 @@ impl<'a> SolveResources<'a> {
             height,
             width,
             color_num,
+            uncertain_memo,
             clues: &puzzle.clues,
             free,
         }
@@ -72,8 +74,19 @@ impl<'a> SolveResources<'a> {
         self.width
     }
 
+    pub fn get_length(&self, line_id: LineId) -> usize {
+        match line_id {
+            LineId::Row(_) => self.width,
+            LineId::Column(_) => self.height,
+        }
+    }
+
     pub fn get_color_num(&self) -> usize {
         self.color_num
+    }
+
+    pub fn get_uncertain_memo(&self) -> usize {
+        self.uncertain_memo
     }
 
     fn get_line_clue(&self, line_id: LineId) -> &LineClue {
