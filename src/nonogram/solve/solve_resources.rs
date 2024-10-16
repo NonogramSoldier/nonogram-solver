@@ -89,7 +89,7 @@ impl<'a> SolveResources<'a> {
         self.uncertain_memo
     }
 
-    fn get_line_clue(&self, line_id: LineId) -> &LineClue {
+    pub fn get_line_clue(&self, line_id: LineId) -> &LineClue {
         match line_id {
             LineId::Row(index) => &self.clues.0[index],
             LineId::Column(index) => &self.clues.1[index],
@@ -99,7 +99,7 @@ impl<'a> SolveResources<'a> {
     pub fn get_free(&self, line_id: LineId) -> Result<&usize> {
         self.free
             .get(&line_id)
-            .context("this resource does not have the necessary value of free")
+            .context("resource does not have the necessary value of free")
     }
 
     pub fn get_binomial(&self, line_id: LineId) -> Result<u128> {

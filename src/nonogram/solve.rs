@@ -71,132 +71,20 @@ pub fn solve(puzzle: &Puzzle) -> Result<bool> {
     //     }
     // };
 
-    // if line_probability.solve(&line_memo, &line_clue, free) {
-    //     println!("{:#?}", line_probability);
-    // } else {
-    //     println!("muri");
-    // }
-
-    // let vec = vec![("a", 10), ("s", 8), ("y", 2)];
-    // let mut queue: FxPriorityQueue<&str, usize> = FxPriorityQueue::new_heapify(vec);
-    let mut root = LayerSolver::new(None, &resources);
-    root.grid.insert(
-        PixelId {
-            row_index: 0,
-            column_index: 0,
-        },
-        10,
-    );
-    root.grid.insert(
-        PixelId {
-            row_index: 1,
-            column_index: 0,
-        },
-        20,
-    );
-    root.grid.insert(
-        PixelId {
-            row_index: 2,
-            column_index: 0,
-        },
-        30,
-    );
-    root.grid.insert(
-        PixelId {
-            row_index: 3,
-            column_index: 0,
-        },
-        40,
-    );
-    root.grid.insert(
-        PixelId {
-            row_index: 4,
-            column_index: 0,
-        },
-        50,
-    );
-
-    let mut child1 = LayerSolver::new(Some(&root), &resources);
-    child1.grid.insert(
-        PixelId {
-            row_index: 0,
-            column_index: 0,
-        },
-        20,
-    );
-    child1.grid.insert(
-        PixelId {
-            row_index: 0,
-            column_index: 1,
-        },
-        30,
-    );
-    child1.grid.insert(
-        PixelId {
-            row_index: 0,
-            column_index: 2,
-        },
-        40,
-    );
-    child1.grid.insert(
-        PixelId {
-            row_index: 0,
-            column_index: 3,
-        },
-        50,
-    );
-    child1.grid.insert(
-        PixelId {
-            row_index: 0,
-            column_index: 4,
-        },
-        60,
-    );
-
-    println!(
-        "{}",
-        child1.cache_memo(PixelId {
-            row_index: 0,
-            column_index: 0
-        })
-    );
-    println!(
-        "{}",
-        child1.cache_memo(PixelId {
-            row_index: 1,
-            column_index: 0
-        })
-    );
-    println!(
-        "{}",
-        child1.cache_memo(PixelId {
-            row_index: 2,
-            column_index: 0
-        })
-    );
-    println!(
-        "{}",
-        child1.cache_memo(PixelId {
-            row_index: 3,
-            column_index: 0
-        })
-    );
-    println!(
-        "{}",
-        child1.cache_memo(PixelId {
-            row_index: 5,
-            column_index: 0
-        })
-    );
-    println!("{:#?}", child1.grid_cache);
-
     // for pixel_id in PixelIterator::new(LineId::Row(3), &solve_resources) {
     //     println!("{:?}", pixel_id);
     // }
 
-    // let mut layer_solver = LayerSolver::new(&resources, None, None, true);
-    // layer_solver.init()?;
-    // layer_solver.show_blank_possibility();
+    let mut layer_solver = LayerSolver::new(None, &resources);
+    let mut priority_queue = layer_solver.init()?.unwrap();
+
+    loop {
+        match priority_queue.pop() {
+            Some(value) => println!("{:?}", value),
+            None => break,
+        }
+    }
+
     Ok(true)
 }
 
@@ -261,55 +149,101 @@ impl<'a> LayerSolver<'a> {
             },
             None => self.resources.get_uncertain_memo(),
         }
-        // let parent = self
-        //     .parent
-        //     .with_context(|| format!("Cannot find pixel memo. pixel_id: {:?}", pixel_id))?;
-        // match parent.grid.get(&pixel_id) {
-        //     Some(&memo) => Ok(memo),
-        //     None => match parent.grid_cache.get(&pixel_id) {
-        //         Some(&memo) => Ok(memo),
-        //         None => parent.get_ancestral_memo(pixel_id),
-        //     },
-        // }
     }
 
-    // fn init(&mut self) -> Result<()> {
-    //     let mut vec: Vec<(LineId, Reverse<u128>)> = Vec::new();
-    //     for i in 0..self.resources.get_height() {
-    //         let line_id = LineId::Row(i);
-    //         vec.push((line_id, Reverse(self.resources.get_binomial(line_id))))
-    //     }
-    //     for i in 0..self.resources.get_width() {
-    //         let line_id = LineId::Column(i);
-    //         vec.push((line_id, Reverse(self.resources.get_binomial(line_id))))
-    //     }
+    fn init(&mut self) -> Result<Option<FxPriorityQueue<LineId, Priority>>> {
+        let mut vec: Vec<(LineId, u128)> = Vec::new();
+        for i in 0..self.resources.get_height() {
+            let line_id = LineId::Row(i);
+            vec.push((line_id, self.resources.get_binomial(line_id)?));
+        }
+        for i in 0..self.resources.get_width() {
+            let line_id = LineId::Column(i);
+            vec.push((line_id, self.resources.get_binomial(line_id)?));
+        }
 
-    //     let mut priority_queue = FxPriorityQueue::new_heapify(vec);
+        let mut priority_queue = FxPriorityQueue::new_heapify(vec);
+        let mut result: FxPriorityQueue<LineId, Priority> = FxPriorityQueue::new();
 
-    //     loop {
-    //         if let Some(value) = priority_queue.pop() {
-    //             println!("{:?}", value);
-    //             if !(self.line_solve(value.0)?) {
-    //                 bail!("initial line solve returns false");
-    //             }
-    //             self.update_layer(value.0);
-    //         } else {
-    //             return Ok(());
-    //         }
-    //     }
-    // }
+        loop {
+            match priority_queue.pop() {
+                Some(value) => {
+                    // println!("{:?}", value);
+                    if !self.line_solve(value.0, &mut result)? {
+                        return Ok(None);
+                    }
+                }
+                None => {
+                    // println!("{:#?}", self.line_probabilities);
+                    return Ok(Some(result));
+                }
+            }
+        }
+    }
+
+    fn line_solve(
+        &mut self,
+        line_id: LineId,
+        priority_queue: &mut FxPriorityQueue<LineId, Priority>,
+    ) -> Result<bool> {
+        let mut line_memo: Vec<usize> = Vec::new();
+        for pixel_id in PixelIterator::new(line_id, self.resources.get_length(line_id)) {
+            line_memo.push(self.cache_memo(pixel_id));
+        }
+
+        if !self
+            .line_probabilities
+            .entry(line_id)
+            .or_insert_with(|| {
+                LineProbability::new(
+                    self.resources.get_length(line_id),
+                    self.resources.get_color_num(),
+                )
+            })
+            .solve(
+                &line_memo,
+                self.resources.get_line_clue(line_id),
+                *self.resources.get_free(line_id)?,
+            )
+        {
+            return Ok(false);
+        }
+        for (pixel_index, &pixel_memo) in line_memo.iter().enumerate() {
+            let mut new_impossible_colors = 0;
+            let line_probability = self.line_probabilities.get(&line_id).unwrap();
+            for color_index in ColorIterator::new(pixel_memo) {
+                if line_probability.get_color_case(pixel_index, color_index) == 0 {
+                    new_impossible_colors ^= 1 << color_index;
+                }
+            }
+
+            if new_impossible_colors != 0 {
+                let new_possible_colors = pixel_memo ^ new_impossible_colors;
+                self.grid
+                    .insert(line_id.to_pixel_id(pixel_index), new_possible_colors);
+                let (oppo_line, oppo_index) = line_id.opposite(pixel_index);
+                if let Some(line) = self.line_probabilities.get(&oppo_line) {
+                    let mut possible_num = 0;
+                    let mut impossible_num = 0;
+                    for new_possible_color in ColorIterator::new(new_possible_colors) {
+                        possible_num += line.get_color_case(oppo_index, new_possible_color)
+                    }
+                    for new_impossible_color in ColorIterator::new(new_impossible_colors) {
+                        impossible_num += line.get_color_case(oppo_index, new_impossible_color);
+                    }
+                    priority_queue.add_or_insert(
+                        oppo_line,
+                        (possible_num as f64 / (possible_num + impossible_num) as f64).ln(),
+                    );
+                }
+            }
+        }
+
+        Ok(true)
+    }
 
     // fn solve() -> bool {
     //     todo!()
-    // }
-
-    // fn line_solve(&mut self, line_id: LineId) -> Result<bool> {
-    //     self.grid_probability.line_solve(
-    //         line_id,
-    //         self.layer.get_line_memo(line_id, self.resources),
-    //         self.resources.get_clue(line_id),
-    //         self.resources,
-    //     )
     // }
 
     // fn show_blank_possibility(&self) {
@@ -387,6 +321,13 @@ impl LineId {
             },
         }
     }
+
+    fn opposite(&self, pixel_index: usize) -> (LineId, usize) {
+        match *self {
+            LineId::Row(row_index) => (LineId::Column(pixel_index), row_index),
+            LineId::Column(column_index) => (LineId::Row(pixel_index), column_index),
+        }
+    }
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
@@ -434,17 +375,34 @@ impl Iterator for PixelIterator {
     }
 }
 
+struct ColorIterator {
+    current_pixel_memo: usize,
+}
+
+impl ColorIterator {
+    fn new(pixel_memo: usize) -> Self {
+        Self {
+            current_pixel_memo: pixel_memo,
+        }
+    }
+}
+
+impl Iterator for ColorIterator {
+    type Item = usize;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current_pixel_memo != 0 {
+            let index = self.current_pixel_memo.trailing_zeros();
+            self.current_pixel_memo ^= 1 << index;
+            Some(index as usize)
+        } else {
+            None
+        }
+    }
+}
+
 type Priority = f64;
 
-// #[derive(Debug)]
-// pub struct PixelMemo {
-//     possibles: FxHashSet<usize>,
-// }
-
-// impl PixelMemo {
-//     fn new(color_num: usize) -> Self {
-//         Self {
-//             possibles: (0..color_num).collect(),
-//         }
-//     }
-// }
+// FULLY_SOLVED: 完全に解かれた
+// PARTIALLY_SOLVED: 部分的に解かれた
+// CONFLICT: 矛盾が見つかった

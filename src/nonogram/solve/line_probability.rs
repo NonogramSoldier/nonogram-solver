@@ -47,9 +47,6 @@ impl LineProbability {
 
                     if is_first_place {
                         for index in (0..description.number).rev() {
-                            // if !line_memo[min_index + index]
-                            //     .possibles
-                            //     .contains(&description.color_index)
                             if line_memo[min_index + index] & (1 << description.color_index) == 0 {
                                 segment_note.block_states = BlockStates::Blocked(index);
                                 break;
@@ -173,6 +170,14 @@ impl LineProbability {
             // println!("{:#?}", description_notes);
             true
         }
+    }
+
+    pub fn get_color_case(&self, pixel_index: usize, color_index: usize) -> u128 {
+        self.color_cases[pixel_index][color_index]
+    }
+
+    pub fn get_painting_count(&self) -> u128 {
+        self.painting_count
     }
 }
 
