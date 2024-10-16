@@ -15,7 +15,7 @@ pub struct Puzzle {
 impl Puzzle {
     pub fn from_json(puzzle_name: &str) -> Result<Self> {
         let path = &format!("puzzles/{}.json", puzzle_name);
-        let file = File::open(path).with_context(|| format!("Cannot open the path {}", path))?;
+        let file = File::open(path).with_context(|| format!("Cannot open the path \"{}\"", path))?;
 
         let reader = BufReader::new(file);
 
