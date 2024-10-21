@@ -77,23 +77,23 @@ where
         value
     }
 
-    pub fn insert(&mut self, key: K, priority: P) {
-        if self.map.contains_key(&key) {
-            let index = *self.map.get(&key).unwrap();
-            self.heap[index].1 = priority;
+    // pub fn insert(&mut self, key: K, priority: P) {
+    //     if self.map.contains_key(&key) {
+    //         let index = *self.map.get(&key).unwrap();
+    //         self.heap[index].1 = priority;
 
-            if index == self.sift_up(index) {
-                self.sift_down(index);
-            }
-        } else {
-            let push_index = self.heap.len();
+    //         if index == self.sift_up(index) {
+    //             self.sift_down(index);
+    //         }
+    //     } else {
+    //         let push_index = self.heap.len();
 
-            self.heap.push((key.clone(), priority));
-            self.map.insert(key, push_index);
+    //         self.heap.push((key.clone(), priority));
+    //         self.map.insert(key, push_index);
 
-            self.sift_up(push_index);
-        }
-    }
+    //         self.sift_up(push_index);
+    //     }
+    // }
 
     pub fn pop(&mut self) -> Option<(K, P)> {
         let len = self.heap.len();

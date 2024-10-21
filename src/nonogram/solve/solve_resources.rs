@@ -110,7 +110,7 @@ impl<'a> SolveResources<'a> {
         ))
     }
 
-    pub fn show_free(&self) {
-        println!("{:#?}", self.free);
-    }
+    // pub fn show_free(&self) {
+    //     println!("{:#?}", self.free);
+    // }
 }

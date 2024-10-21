@@ -3,7 +3,7 @@
 
 use anyhow::Result;
 use nonogram::{solve::solve, Puzzle};
-use std::io::stdin;
+use std::{io::stdin, time::Instant};
 
 mod nonogram;
 mod priority_queue;
@@ -20,7 +20,10 @@ fn main() -> Result<()> {
 
     // println!("{:#?}", puzzle);
 
+    let start = Instant::now();
     solve(&puzzle)?;
+    let duration = start.elapsed();
+    println!("time: {:?}", duration);
 
     Ok(())
 }
