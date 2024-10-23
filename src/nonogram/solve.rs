@@ -3,6 +3,7 @@ mod solve_resources;
 
 use crate::priority_queue::FxPriorityQueue;
 use anyhow::Ok;
+use bitvec::prelude::*;
 use fxhash::FxHashMap;
 use line_probability::LineProbability;
 use solve_resources::SolveResources;
@@ -11,69 +12,6 @@ use super::*;
 
 pub fn solve(puzzle: &Puzzle) -> Result<bool> {
     let resources = SolveResources::new(puzzle);
-    // resources.show_free();
-    // for index in 0..resources.get_height() {
-    //     println!(
-    //         "row({}): {}",
-    //         index,
-    //         resources.get_binomial(LineId::Row(index))?
-    //     );
-    // }
-
-    // let length = 15;
-    // let color_num = 2;
-
-    // let mut line_probability = LineProbability::new(length, color_num);
-    // let mut line_memo = vec![(1 << color_num) - 1; length];
-
-    // line_memo[7] -= 1;
-    // line_memo[8] -= 1;
-    // line_memo[10] -= 1;
-    // line_memo[11] -= 1;
-
-    // println!("{:?}", line_memo);
-
-    // // let line_clue: LineClue = vec![(1, 2), (1, 1), (1, 5)];
-    // let line_clue: LineClue = vec![
-    //     Description {
-    //         color_index: 1,
-    //         number: 2,
-    //     },
-    //     Description {
-    //         color_index: 1,
-    //         number: 1,
-    //     },
-    //     Description {
-    //         color_index: 1,
-    //         number: 5,
-    //     },
-    // ];
-
-    // let free = {
-    //     let d_num = line_clue.len();
-
-    //     if d_num == 0 {
-    //         1
-    //     } else {
-    //         let mut sep_num = 0;
-    //         let mut sum = line_clue[0].number;
-    //         for i in 1..d_num {
-    //             sum += line_clue[i].number;
-    //             if line_clue[i - 1].color_index == line_clue[i].color_index {
-    //                 sep_num += 1;
-    //             }
-    //         }
-    //         if length < sep_num + sum {
-    //             0
-    //         } else {
-    //             length - sep_num - sum + 1
-    //         }
-    //     }
-    // };
-
-    // for pixel_id in PixelIterator::new(LineId::Row(3), &solve_resources) {
-    //     println!("{:?}", pixel_id);
-    // }
 
     let mut layer_solver = LayerSolver::new(None, &resources);
     let priority_queue = layer_solver.init()?.unwrap();
@@ -494,12 +432,6 @@ impl<'a> LayerSolver<'a> {
                 } else {
                     print!("..");
                 }
-                // if let Some(pixel_memo) = pixel {
-                //     if pixel_memo.blank_possibility == Possibility::Impossible {
-                //         print!("$$");
-                //         continue;
-                //     }
-                // }
             }
             println!("|");
         }
@@ -510,38 +442,6 @@ impl<'a> LayerSolver<'a> {
         }
         println!();
     }
-
-    // fn update_layer(&mut self, line_id: LineId) -> Result<Vec<HashSet<usize>>> {
-    //     let mut vec: Vec<HashSet<usize>> = Default::default();
-    //     for (index, color_case) in self
-    //         .grid_probability
-    //         .get_color_cases(line_id)?
-    //         .iter()
-    //         .enumerate()
-    //     {
-    //         vec.push(Default::default());
-    //         for (color_index, &case) in color_case.iter().enumerate() {
-    //             if case == 0 {
-    //                 if self.layer.set_pixel_memo(line_id.to_pixel_id(index), 0) {
-    //                     vec[index].insert(color_index);
-    //                 }
-    //             }
-    //         }
-    //         // if color_case.blank_num == 0 {
-    //         //     if self.layer.set_pixel_memo(line_id.to_pixel_id(index), 0) {
-    //         //         vec[index].insert(0);
-    //         //     }
-    //         // }
-
-    //     }
-    //     Ok(vec)
-
-    //     // for color_case in self.grid_probability.get_color_cases(line_id)?.iter() {
-    //     //     if color_case.blank_num == 0 {
-    //     //         self.layer.
-    //     //     }
-    //     // }
-    // }
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
@@ -649,4 +549,28 @@ enum SolveResult {
     FullySolved,
     PartiallySolved,
     Conflict,
+}
+
+#[derive(Clone)]
+struct bitgrid {
+    height: usize,
+    width: usize,
+    color_num: usize,
+    grid: BitVec,
+}
+
+impl bitgrid {
+    fn new(height: usize, width: usize, color_num: usize) -> Self {
+        Self {
+            height,
+            width,
+            color_num,
+            grid: bitvec![1; height * width * color_num],
+        }
+    }
+
+    fn get_memo(&self, pixel_id: PixelId) -> &BitSlice {
+        let index = pixel_id.row_index * self.width + pixel_id.column_index;
+        &self.grid[index..index + self.color_num]
+    }
 }
