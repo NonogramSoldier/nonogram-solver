@@ -13,10 +13,15 @@ use super::*;
 pub fn solve(puzzle: &Puzzle) -> Result<bool> {
     let resources = SolveResources::new(puzzle);
 
+    let mut backtracks = 0;
+    let mut nlines = 0;
     let mut layer_solver = LayerSolver::new(None, &resources);
-    let priority_queue = layer_solver.init()?.unwrap();
-    match layer_solver.solve(priority_queue)? {
-        SolveResult::FullySolved => layer_solver.show_blank_possibility(),
+    let priority_queue = layer_solver.init(&mut nlines)?.unwrap();
+    match layer_solver.solve(priority_queue, &mut backtracks, &mut nlines)? {
+        SolveResult::FullySolved => {
+            layer_solver.show_blank_possibility();
+            println!("line_solves: {}", nlines);
+            println!("backtracks:  {}", backtracks);},
         SolveResult::PartiallySolved => {
             println!("kya-");
             layer_solver.show_blank_possibility();
@@ -167,7 +172,7 @@ impl<'a> LayerSolver<'a> {
         FxPriorityQueue::new_heapify(vec)
     }
 
-    fn init(&mut self) -> Result<Option<FxPriorityQueue<LineId, Priority>>> {
+    fn init(&mut self, nlines: &mut u128) -> Result<Option<FxPriorityQueue<LineId, Priority>>> {
         let mut vec: Vec<(LineId, u128)> = Vec::new();
         for i in 0..self.resources.get_height() {
             let line_id = LineId::Row(i);
@@ -185,6 +190,7 @@ impl<'a> LayerSolver<'a> {
             match priority_queue.pop() {
                 Some(value) => {
                     // println!("{:?}", value);
+                    *nlines += 1;
                     if !self.line_solve(value.0, &mut result)? {
                         return Ok(None);
                     }
@@ -250,15 +256,19 @@ impl<'a> LayerSolver<'a> {
             }
         }
 
+        // self.show_blank_possibility();
         Ok(true)
     }
 
     fn solve(
         &mut self,
         mut priority_queue: FxPriorityQueue<LineId, Priority>,
+        backtracks: &mut u128,
+        nlines: &mut u128,
     ) -> Result<SolveResult> {
         loop {
             if let Some((line_id, _)) = priority_queue.pop() {
+                *nlines += 1;
                 if !self.line_solve(line_id, &mut priority_queue)? {
                     // println!("{:?}", line_id);
                     // println!("return conflict1");
@@ -308,6 +318,7 @@ impl<'a> LayerSolver<'a> {
 
         match min_value {
             Some((_, pixel_id, color_index)) => {
+                *backtracks += 1;
                 // println!("make_child, {:?}, {}", pixel_id, color_index);
                 let result1;
                 let result2;
@@ -324,8 +335,8 @@ impl<'a> LayerSolver<'a> {
                     // println!("{:#?}", priority_queue1);
                     let priority_queue2 = layer_solver2.set_pixel_memo(pixel_id, colors2, colors1);
 
-                    result1 = layer_solver1.solve(priority_queue1)?;
-                    result2 = layer_solver2.solve(priority_queue2)?;
+                    result1 = layer_solver1.solve(priority_queue1, backtracks, nlines)?;
+                    result2 = layer_solver2.solve(priority_queue2, backtracks, nlines)?;
                     grid1 = layer_solver1.grid;
                     grid2 = layer_solver2.grid;
                 }
