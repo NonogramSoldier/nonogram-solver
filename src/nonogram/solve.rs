@@ -174,13 +174,13 @@ impl<'a> LayerSolver<'a> {
 
     fn init(&mut self, nlines: &mut u128) -> Result<Option<FxPriorityQueue<LineId, Priority>>> {
         let mut vec: Vec<(LineId, u128)> = Vec::new();
-        for i in 0..self.resources.get_height() {
+        for i in 0..self.resources.height {
             let line_id = LineId::Row(i);
-            vec.push((line_id, self.resources.get_binomial(line_id)?));
+            vec.push((line_id, self.resources.get_binomial(line_id)));
         }
-        for i in 0..self.resources.get_width() {
+        for i in 0..self.resources.width {
             let line_id = LineId::Column(i);
-            vec.push((line_id, self.resources.get_binomial(line_id)?));
+            vec.push((line_id, self.resources.get_binomial(line_id)));
         }
 
         let mut priority_queue = FxPriorityQueue::new_heapify(vec);
@@ -219,13 +219,13 @@ impl<'a> LayerSolver<'a> {
             .or_insert_with(|| {
                 LineProbability::new(
                     self.resources.get_length(line_id),
-                    self.resources.get_color_num(),
+                    self.resources.color_num,
                 )
             })
             .solve(
                 &line_memo,
                 self.resources.get_line_clue(line_id),
-                *self.resources.get_free(line_id)?,
+                self.resources.get_free(line_id),
             )
         {
             // println!("!?");
@@ -282,8 +282,8 @@ impl<'a> LayerSolver<'a> {
         // self.show_blank_possibility();
 
         let mut min_value: Option<(f64, PixelId, usize)> = None;
-        for row_index in 0..self.resources.get_height() {
-            for pixel_id in PixelIterator::new(LineId::Row(row_index), self.resources.get_width()) {
+        for row_index in 0..self.resources.height {
+            for pixel_id in PixelIterator::new(LineId::Row(row_index), self.resources.width) {
                 let pixel_memo = self.cache_memo(pixel_id);
                 match pixel_memo.count_ones() {
                     ..=1 => continue,
@@ -427,14 +427,14 @@ impl<'a> LayerSolver<'a> {
 
     fn show_blank_possibility(&mut self) {
         print!(" ");
-        for _ in 0..self.resources.get_width() {
+        for _ in 0..self.resources.width {
             print!("__");
         }
         println!();
 
-        for row_index in 0..self.resources.get_height() {
+        for row_index in 0..self.resources.height {
             print!("|");
-            for pixel_id in PixelIterator::new(LineId::Row(row_index), self.resources.get_width()) {
+            for pixel_id in PixelIterator::new(LineId::Row(row_index), self.resources.width) {
                 let memo = self.cache_memo(pixel_id);
                 if memo == 1 {
                     print!("$$");
@@ -448,7 +448,7 @@ impl<'a> LayerSolver<'a> {
         }
 
         print!(" ");
-        for _ in 0..self.resources.get_width() {
+        for _ in 0..self.resources.width {
             print!("‾‾");
         }
         println!();
@@ -560,28 +560,4 @@ enum SolveResult {
     FullySolved,
     PartiallySolved,
     Conflict,
-}
-
-#[derive(Clone)]
-struct bitgrid {
-    height: usize,
-    width: usize,
-    color_num: usize,
-    grid: BitVec,
-}
-
-impl bitgrid {
-    fn new(height: usize, width: usize, color_num: usize) -> Self {
-        Self {
-            height,
-            width,
-            color_num,
-            grid: bitvec![1; height * width * color_num],
-        }
-    }
-
-    fn get_memo(&self, pixel_id: PixelId) -> &BitSlice {
-        let index = pixel_id.row_index * self.width + pixel_id.column_index;
-        &self.grid[index..index + self.color_num]
-    }
 }
