@@ -12,7 +12,7 @@ use super::*;
 pub fn solve(puzzle: &Puzzle) -> Result<bool> {
     let resources = SolveResources::new(puzzle);
     // resources.show_free();
-    // for index in 0..resources.get_height() {
+    // for index in 0..resources.height {
     //     println!(
     //         "row({}): {}",
     //         index,
@@ -83,7 +83,8 @@ pub fn solve(puzzle: &Puzzle) -> Result<bool> {
         SolveResult::FullySolved => {
             layer_solver.show_blank_possibility();
             println!("line_solves: {}", nlines);
-            println!("backtracks:  {}", backtracks);},
+            println!("backtracks:  {}", backtracks);
+        }
         SolveResult::PartiallySolved => {
             println!("kya-");
             layer_solver.show_blank_possibility();
@@ -170,7 +171,7 @@ impl<'a> LayerSolver<'a> {
                     None => parent.get_ancestral_memo(pixel_id),
                 },
             },
-            None => self.resources.get_uncertain_memo(),
+            None => self.resources.uncertain_memo,
         }
     }
 
@@ -236,13 +237,13 @@ impl<'a> LayerSolver<'a> {
 
     fn init(&mut self, nlines: &mut u128) -> Result<Option<FxPriorityQueue<LineId, Priority>>> {
         let mut vec: Vec<(LineId, u128)> = Vec::new();
-        for i in 0..self.resources.get_height() {
+        for i in 0..self.resources.height {
             let line_id = LineId::Row(i);
-            vec.push((line_id, self.resources.get_binomial(line_id)?));
+            vec.push((line_id, self.resources.get_binomial(line_id)));
         }
-        for i in 0..self.resources.get_width() {
+        for i in 0..self.resources.width {
             let line_id = LineId::Column(i);
-            vec.push((line_id, self.resources.get_binomial(line_id)?));
+            vec.push((line_id, self.resources.get_binomial(line_id)));
         }
 
         let mut priority_queue = FxPriorityQueue::new_heapify(vec);
@@ -279,15 +280,12 @@ impl<'a> LayerSolver<'a> {
             .line_probabilities
             .entry(line_id)
             .or_insert_with(|| {
-                LineProbability::new(
-                    self.resources.get_length(line_id),
-                    self.resources.get_color_num(),
-                )
+                LineProbability::new(self.resources.get_length(line_id), self.resources.color_num)
             })
             .solve(
                 &line_memo,
                 self.resources.get_line_clue(line_id),
-                *self.resources.get_free(line_id)?,
+                self.resources.get_free(line_id),
             )
         {
             // println!("!?");
@@ -344,8 +342,8 @@ impl<'a> LayerSolver<'a> {
         // self.show_blank_possibility();
 
         let mut min_value: Option<(f64, PixelId, usize)> = None;
-        for row_index in 0..self.resources.get_height() {
-            for pixel_id in PixelIterator::new(LineId::Row(row_index), self.resources.get_width()) {
+        for row_index in 0..self.resources.height {
+            for pixel_id in PixelIterator::new(LineId::Row(row_index), self.resources.width) {
                 let pixel_memo = self.cache_memo(pixel_id);
                 match pixel_memo.count_ones() {
                     ..=1 => continue,
@@ -489,14 +487,14 @@ impl<'a> LayerSolver<'a> {
 
     fn show_blank_possibility(&mut self) {
         print!(" ");
-        for _ in 0..self.resources.get_width() {
+        for _ in 0..self.resources.width {
             print!("__");
         }
         println!();
 
-        for row_index in 0..self.resources.get_height() {
+        for row_index in 0..self.resources.height {
             print!("|");
-            for pixel_id in PixelIterator::new(LineId::Row(row_index), self.resources.get_width()) {
+            for pixel_id in PixelIterator::new(LineId::Row(row_index), self.resources.width) {
                 let memo = self.cache_memo(pixel_id);
                 if memo == 1 {
                     print!("$$");
@@ -516,7 +514,7 @@ impl<'a> LayerSolver<'a> {
         }
 
         print!(" ");
-        for _ in 0..self.resources.get_width() {
+        for _ in 0..self.resources.width {
             print!("‾‾");
         }
         println!();
