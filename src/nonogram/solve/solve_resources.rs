@@ -36,7 +36,6 @@ pub struct SolveResources<'a> {
     pub height: usize,
     pub width: usize,
     pub color_num: usize,
-    pub uncertain_memo: usize,
     clues: &'a (Vec<LineClue>, Vec<LineClue>),
     free: (Vec<usize>, Vec<usize>),
 }
@@ -46,13 +45,11 @@ impl<'a> SolveResources<'a> {
         let height = puzzle.get_height();
         let width = puzzle.get_width();
         let color_num = puzzle.get_color_num();
-        let uncertain_memo = (1 << color_num) - 1;
 
         Self {
             height,
             width,
             color_num,
-            uncertain_memo,
             clues: &puzzle.clues,
             free: (
                 calc_free(width, &puzzle.clues.0),
@@ -66,10 +63,6 @@ impl<'a> SolveResources<'a> {
             LineId::Row(_) => self.width,
             LineId::Column(_) => self.height,
         }
-    }
-
-    pub fn get_uncertain_memo(&self) -> usize {
-        self.uncertain_memo
     }
 
     pub fn get_line_clue(&self, line_id: LineId) -> &LineClue {
