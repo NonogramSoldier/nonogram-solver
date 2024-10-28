@@ -2,97 +2,34 @@ mod line_probability;
 mod solve_resources;
 
 use crate::priority_queue::FxPriorityQueue;
-use anyhow::Ok;
 use fxhash::FxHashMap;
 use line_probability::LineProbability;
 use solve_resources::SolveResources;
 
 use super::*;
 
-pub fn solve(puzzle: &Puzzle) -> Result<bool> {
+pub fn solve(puzzle: &Puzzle) {
     let resources = SolveResources::new(puzzle);
-    // resources.show_free();
-    // for index in 0..resources.height {
-    //     println!(
-    //         "row({}): {}",
-    //         index,
-    //         resources.get_binomial(LineId::Row(index))?
-    //     );
-    // }
-
-    // let length = 15;
-    // let color_num = 2;
-
-    // let mut line_probability = LineProbability::new(length, color_num);
-    // let mut line_memo = vec![(1 << color_num) - 1; length];
-
-    // line_memo[7] -= 1;
-    // line_memo[8] -= 1;
-    // line_memo[10] -= 1;
-    // line_memo[11] -= 1;
-
-    // println!("{:?}", line_memo);
-
-    // // let line_clue: LineClue = vec![(1, 2), (1, 1), (1, 5)];
-    // let line_clue: LineClue = vec![
-    //     Description {
-    //         color_index: 1,
-    //         number: 2,
-    //     },
-    //     Description {
-    //         color_index: 1,
-    //         number: 1,
-    //     },
-    //     Description {
-    //         color_index: 1,
-    //         number: 5,
-    //     },
-    // ];
-
-    // let free = {
-    //     let d_num = line_clue.len();
-
-    //     if d_num == 0 {
-    //         1
-    //     } else {
-    //         let mut sep_num = 0;
-    //         let mut sum = line_clue[0].number;
-    //         for i in 1..d_num {
-    //             sum += line_clue[i].number;
-    //             if line_clue[i - 1].color_index == line_clue[i].color_index {
-    //                 sep_num += 1;
-    //             }
-    //         }
-    //         if length < sep_num + sum {
-    //             0
-    //         } else {
-    //             length - sep_num - sum + 1
-    //         }
-    //     }
-    // };
-
-    // for pixel_id in PixelIterator::new(LineId::Row(3), &solve_resources) {
-    //     println!("{:?}", pixel_id);
-    // }
 
     let mut backtracks = 0;
     let mut nlines = 0;
     let mut layer_solver = LayerSolver::new(None, &resources);
-    let priority_queue = layer_solver.init(&mut nlines)?.unwrap();
-    match layer_solver.solve(priority_queue, &mut backtracks, &mut nlines)? {
-        SolveResult::FullySolved => {
-            layer_solver.show_blank_possibility();
-            println!("line_solves: {}", nlines);
-            println!("backtracks:  {}", backtracks);
+    if let Some(priority_queue) = layer_solver.init(&mut nlines) {
+        match layer_solver.solve(priority_queue, &mut backtracks, &mut nlines) {
+            SolveResult::FullySolved => {
+                layer_solver.show_blank_possibility();
+                println!("line_solves: {}", nlines);
+                println!("backtracks:  {}", backtracks);
+            }
+            SolveResult::PartiallySolved => {
+                println!("kya-");
+                layer_solver.show_blank_possibility();
+            }
+            SolveResult::Conflict => println!("nanndeyanenn"),
         }
-        SolveResult::PartiallySolved => {
-            println!("kya-");
-            layer_solver.show_blank_possibility();
-        }
-        SolveResult::Conflict => println!("nanndeyanenn"),
+    } else {
+        println!("nanndeyanenn");
     }
-
-    Ok(true)
 }
 
 fn calc_priority(
@@ -139,7 +76,6 @@ pub struct LayerSolver<'a> {
 
 impl<'a> LayerSolver<'a> {
     fn new(parent: Option<&'a LayerSolver<'a>>, resources: &'a SolveResources<'a>) -> Self {
-        // println!("!!");
         Self {
             resources,
             parent,
@@ -235,7 +171,7 @@ impl<'a> LayerSolver<'a> {
         FxPriorityQueue::new_heapify(vec)
     }
 
-    fn init(&mut self, nlines: &mut u128) -> Result<Option<FxPriorityQueue<LineId, Priority>>> {
+    fn init(&mut self, nlines: &mut u128) -> Option<FxPriorityQueue<LineId, Priority>> {
         let mut vec: Vec<(LineId, u128)> = Vec::new();
         for i in 0..self.resources.height {
             let line_id = LineId::Row(i);
@@ -252,15 +188,13 @@ impl<'a> LayerSolver<'a> {
         loop {
             match priority_queue.pop() {
                 Some(value) => {
-                    // println!("{:?}", value);
                     *nlines += 1;
-                    if !self.line_solve(value.0, &mut result)? {
-                        return Ok(None);
+                    if !self.line_solve(value.0, &mut result) {
+                        return None;
                     }
                 }
                 None => {
-                    // println!("{:#?}", self.line_probabilities);
-                    return Ok(Some(result));
+                    return Some(result);
                 }
             }
         }
@@ -270,7 +204,7 @@ impl<'a> LayerSolver<'a> {
         &mut self,
         line_id: LineId,
         priority_queue: &mut FxPriorityQueue<LineId, Priority>,
-    ) -> Result<bool> {
+    ) -> bool {
         let mut line_memo: Vec<usize> = Vec::new();
         for pixel_id in PixelIterator::new(line_id, self.resources.get_length(line_id)) {
             line_memo.push(self.cache_memo(pixel_id));
@@ -288,8 +222,7 @@ impl<'a> LayerSolver<'a> {
                 self.resources.get_free(line_id),
             )
         {
-            // println!("!?");
-            return Ok(false);
+            return false;
         }
 
         for (pixel_index, &pixel_memo) in line_memo.iter().enumerate() {
@@ -307,7 +240,6 @@ impl<'a> LayerSolver<'a> {
                     .insert(line_id.to_pixel_id(pixel_index), new_possible_colors);
                 let (oppo_line, oppo_index) = line_id.opposite(pixel_index);
                 if let Some(line) = self.cache_line(oppo_line) {
-                    // println!("priority add");
                     priority_queue.add_or_insert(
                         oppo_line,
                         calc_priority(line, oppo_index, new_possible_colors, new_impossible_colors),
@@ -316,8 +248,7 @@ impl<'a> LayerSolver<'a> {
             }
         }
 
-        // self.show_blank_possibility();
-        Ok(true)
+        true
     }
 
     fn solve(
@@ -325,21 +256,17 @@ impl<'a> LayerSolver<'a> {
         mut priority_queue: FxPriorityQueue<LineId, Priority>,
         backtracks: &mut u128,
         nlines: &mut u128,
-    ) -> Result<SolveResult> {
+    ) -> SolveResult {
         loop {
             if let Some((line_id, _)) = priority_queue.pop() {
                 *nlines += 1;
-                if !self.line_solve(line_id, &mut priority_queue)? {
-                    // println!("{:?}", line_id);
-                    // println!("return conflict1");
-                    return Ok(SolveResult::Conflict);
+                if !self.line_solve(line_id, &mut priority_queue) {
+                    return SolveResult::Conflict;
                 }
             } else {
                 break;
             }
         }
-
-        // self.show_blank_possibility();
 
         let mut min_value: Option<(f64, PixelId, usize)> = None;
         for row_index in 0..self.resources.height {
@@ -379,7 +306,6 @@ impl<'a> LayerSolver<'a> {
         match min_value {
             Some((_, pixel_id, color_index)) => {
                 *backtracks += 1;
-                // println!("make_child, {:?}, {}", pixel_id, color_index);
                 let result1;
                 let result2;
                 let grid1;
@@ -392,11 +318,10 @@ impl<'a> LayerSolver<'a> {
                     let mut layer_solver2 = LayerSolver::new(Some(&self), self.resources);
 
                     let priority_queue1 = layer_solver1.set_pixel_memo(pixel_id, colors1, colors2);
-                    // println!("{:#?}", priority_queue1);
                     let priority_queue2 = layer_solver2.set_pixel_memo(pixel_id, colors2, colors1);
 
-                    result1 = layer_solver1.solve(priority_queue1, backtracks, nlines)?;
-                    result2 = layer_solver2.solve(priority_queue2, backtracks, nlines)?;
+                    result1 = layer_solver1.solve(priority_queue1, backtracks, nlines);
+                    result2 = layer_solver2.solve(priority_queue2, backtracks, nlines);
                     grid1 = layer_solver1.grid;
                     grid2 = layer_solver2.grid;
                 }
@@ -425,46 +350,40 @@ impl<'a> LayerSolver<'a> {
                             }
                         }
 
-                        Ok(SolveResult::PartiallySolved)
+                        SolveResult::PartiallySolved
                     }
                     (SolveResult::FullySolved, SolveResult::Conflict) => {
                         for (&pixel_id, &memo1) in grid1.iter() {
                             self.grid.insert(pixel_id, memo1);
                         }
 
-                        Ok(SolveResult::FullySolved)
+                        SolveResult::FullySolved
                     }
                     (SolveResult::Conflict, SolveResult::FullySolved) => {
                         for (&pixel_id, &memo2) in grid2.iter() {
                             self.grid.insert(pixel_id, memo2);
                         }
 
-                        Ok(SolveResult::FullySolved)
+                        SolveResult::FullySolved
                     }
                     (SolveResult::PartiallySolved, SolveResult::Conflict) => {
                         for (&pixel_id, &memo1) in grid1.iter() {
                             self.grid.insert(pixel_id, memo1);
                         }
 
-                        Ok(SolveResult::PartiallySolved)
+                        SolveResult::PartiallySolved
                     }
                     (SolveResult::Conflict, SolveResult::PartiallySolved) => {
                         for (&pixel_id, &memo2) in grid2.iter() {
                             self.grid.insert(pixel_id, memo2);
                         }
 
-                        Ok(SolveResult::PartiallySolved)
+                        SolveResult::PartiallySolved
                     }
-                    (SolveResult::Conflict, SolveResult::Conflict) => {
-                        // println!("return conflict2");
-                        Ok(SolveResult::Conflict)
-                    }
+                    (SolveResult::Conflict, SolveResult::Conflict) => SolveResult::Conflict,
                 }
             }
-            None => {
-                // println!("??");
-                Ok(SolveResult::FullySolved)
-            }
+            None => SolveResult::FullySolved,
         }
     }
 
@@ -503,12 +422,6 @@ impl<'a> LayerSolver<'a> {
                 } else {
                     print!("..");
                 }
-                // if let Some(pixel_memo) = pixel {
-                //     if pixel_memo.blank_possibility == Possibility::Impossible {
-                //         print!("$$");
-                //         continue;
-                //     }
-                // }
             }
             println!("|");
         }
@@ -519,38 +432,6 @@ impl<'a> LayerSolver<'a> {
         }
         println!();
     }
-
-    // fn update_layer(&mut self, line_id: LineId) -> Result<Vec<HashSet<usize>>> {
-    //     let mut vec: Vec<HashSet<usize>> = Default::default();
-    //     for (index, color_case) in self
-    //         .grid_probability
-    //         .get_color_cases(line_id)?
-    //         .iter()
-    //         .enumerate()
-    //     {
-    //         vec.push(Default::default());
-    //         for (color_index, &case) in color_case.iter().enumerate() {
-    //             if case == 0 {
-    //                 if self.layer.set_pixel_memo(line_id.to_pixel_id(index), 0) {
-    //                     vec[index].insert(color_index);
-    //                 }
-    //             }
-    //         }
-    //         // if color_case.blank_num == 0 {
-    //         //     if self.layer.set_pixel_memo(line_id.to_pixel_id(index), 0) {
-    //         //         vec[index].insert(0);
-    //         //     }
-    //         // }
-
-    //     }
-    //     Ok(vec)
-
-    //     // for color_case in self.grid_probability.get_color_cases(line_id)?.iter() {
-    //     //     if color_case.blank_num == 0 {
-    //     //         self.layer.
-    //     //     }
-    //     // }
-    // }
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]

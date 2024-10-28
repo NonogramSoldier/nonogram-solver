@@ -85,8 +85,4 @@ impl<'a> SolveResources<'a> {
         let d_num = self.get_line_clue(line_id).len();
         binomial((self.get_free(line_id) + d_num - 1) as u128, d_num as u128)
     }
-
-    // pub fn show_free(&self) {
-    //     println!("{:#?}", self.free);
-    // }
 }

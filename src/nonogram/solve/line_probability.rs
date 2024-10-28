@@ -167,7 +167,6 @@ impl LineProbability {
                     color_case[0] -= color_case[paint_index];
                 }
             }
-            // println!("{:#?}", description_notes);
             true
         }
     }
