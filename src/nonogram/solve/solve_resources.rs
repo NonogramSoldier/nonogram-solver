@@ -39,7 +39,6 @@ pub struct SolveResources<'a> {
     pub uncertain_memo: usize,
     clues: &'a (Vec<LineClue>, Vec<LineClue>),
     free: (Vec<usize>, Vec<usize>),
-    range: Vec<Vec<Range<usize>>>,
 }
 
 impl<'a> SolveResources<'a> {
@@ -48,16 +47,6 @@ impl<'a> SolveResources<'a> {
         let width = puzzle.get_width();
         let color_num = puzzle.get_color_num();
         let uncertain_memo = (1 << color_num) - 1;
-        let mut range: Vec<Vec<Range<usize>>> = Default::default();
-        let mut start: usize = 0;
-        for _ in 0..width {
-            let mut row_range: Vec<Range<usize>> = Default::default();
-            for _ in 0..height {
-                row_range.push(start..start + color_num);
-                start += color_num;
-            }
-            range.push(row_range);
-        }
 
         Self {
             height,
@@ -69,7 +58,6 @@ impl<'a> SolveResources<'a> {
                 calc_free(width, &puzzle.clues.0),
                 calc_free(height, &puzzle.clues.1),
             ),
-            range,
         }
     }
 
@@ -102,7 +90,12 @@ impl<'a> SolveResources<'a> {
     }
 
     pub fn get_range(&self, pixel_id: PixelId) -> Range<usize> {
-        self.range[pixel_id.row_index][pixel_id.column_index].clone()
+        let start = self.color_num * (pixel_id.column_index + self.width * pixel_id.row_index);
+        start..start + self.color_num
+    }
+
+    pub fn get_index(&self, pixel_id: PixelId, color_index: usize) -> usize {
+        color_index + self.color_num * (pixel_id.column_index + self.width * pixel_id.row_index)
     }
 
     pub fn get_binomial(&self, line_id: LineId) -> u128 {

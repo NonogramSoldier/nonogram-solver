@@ -13,21 +13,29 @@ use super::*;
 pub fn solve(puzzle: &Puzzle) -> Result<bool> {
     let resources = SolveResources::new(puzzle);
 
-    let mut backtracks = 0;
-    let mut nlines = 0;
-    let mut layer_solver = LayerSolver::new(None, &resources);
-    let priority_queue = layer_solver.init(&mut nlines)?.unwrap();
-    match layer_solver.solve(priority_queue, &mut backtracks, &mut nlines)? {
-        SolveResult::FullySolved => {
-            layer_solver.show_blank_possibility();
-            println!("line_solves: {}", nlines);
-            println!("backtracks:  {}", backtracks);},
-        SolveResult::PartiallySolved => {
-            println!("kya-");
-            layer_solver.show_blank_possibility();
-        }
-        SolveResult::Conflict => println!("nanndeyanenn"),
-    }
+    let mut line_probability = LineProbability::new(resources.height, resources.color_num);
+
+    let grid = bitvec![1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1];
+
+    line_probability.solve(&grid, LineId::Column(2), &resources);
+
+    println!("{:#?}", line_probability);
+
+    // let mut backtracks = 0;
+    // let mut nlines = 0;
+    // let mut layer_solver = LayerSolver::new(None, &resources);
+    // let priority_queue = layer_solver.init(&mut nlines)?.unwrap();
+    // match layer_solver.solve(priority_queue, &mut backtracks, &mut nlines)? {
+    //     SolveResult::FullySolved => {
+    //         layer_solver.show_blank_possibility();
+    //         println!("line_solves: {}", nlines);
+    //         println!("backtracks:  {}", backtracks);},
+    //     SolveResult::PartiallySolved => {
+    //         println!("kya-");
+    //         layer_solver.show_blank_possibility();
+    //     }
+    //     SolveResult::Conflict => println!("nanndeyanenn"),
+    // }
 
     Ok(true)
 }
@@ -213,20 +221,21 @@ impl<'a> LayerSolver<'a> {
             line_memo.push(self.cache_memo(pixel_id));
         }
 
-        if !self
-            .line_probabilities
-            .entry(line_id)
-            .or_insert_with(|| {
-                LineProbability::new(
-                    self.resources.get_length(line_id),
-                    self.resources.color_num,
-                )
-            })
-            .solve(
-                &line_memo,
-                self.resources.get_line_clue(line_id),
-                self.resources.get_free(line_id),
-            )
+        if true
+        // !self
+        // .line_probabilities
+        // .entry(line_id)
+        // .or_insert_with(|| {
+        //     LineProbability::new(
+        //         self.resources.get_length(line_id),
+        //         self.resources.color_num,
+        //     )
+        // })
+        // .solve(
+        //     &line_memo,
+        //     self.resources.get_line_clue(line_id),
+        //     self.resources.get_free(line_id),
+        // )
         {
             // println!("!?");
             return Ok(false);

@@ -14,10 +14,23 @@ impl LineProbability {
         }
     }
 
-    pub fn solve(&mut self, line_memo: &Vec<usize>, line_clue: &LineClue, free: usize) -> bool {
-        if line_clue.len() == 0 {
-            for (index, memo) in line_memo.iter().enumerate() {
-                if memo & 1 == 0 {
+    pub fn solve(
+        &mut self,
+        grid: &BitVec,
+        line_id: LineId,
+        resources: &SolveResources, /*line_memo: &Vec<usize>, line_clue: &LineClue, free: usize*/
+    ) -> bool {
+        if resources.get_line_clue(line_id).len() == 0 {
+            // for (index, memo) in line_memo.iter().enumerate() {
+            //     if memo & 1 == 0 {
+            //         return false;
+            //     }
+            //     self.color_cases[index][0] = 1;
+            // }
+            for (index, pixel_id) in
+                PixelIterator::new(line_id, resources.get_length(line_id)).enumerate()
+            {
+                if !grid[resources.get_index(pixel_id, 0)] {
                     return false;
                 }
                 self.color_cases[index][0] = 1;
@@ -26,6 +39,8 @@ impl LineProbability {
             true
         } else {
             let mut description_notes: Vec<DescriptionNote> = Default::default();
+            let line_clue = resources.get_line_clue(line_id);
+            let free = resources.get_free(line_id);
             for (clue_index, description) in line_clue.iter().enumerate() {
                 let is_first_clue = clue_index == 0;
                 let min_index = if is_first_clue {
@@ -41,22 +56,30 @@ impl LineProbability {
                 };
 
                 let mut segments: Vec<SegmentNote> = Default::default();
+                let free = resources.get_free(line_id);
                 for place_index in 0..free {
                     let is_first_place = place_index == 0;
                     let mut segment_note: SegmentNote = Default::default();
 
                     if is_first_place {
                         for index in (0..description.number).rev() {
-                            if line_memo[min_index + index] & (1 << description.color_index) == 0 {
+                            // if line_memo[min_index + index] & (1 << description.color_index) == 0 {
+                            if !grid[resources.get_index(
+                                line_id.to_pixel_id(min_index + index),
+                                description.color_index,
+                            )] {
                                 segment_note.block_states = BlockStates::Blocked(index);
                                 break;
                             }
                         }
                     } else {
-                        if line_memo[min_index + place_index + description.number - 1]
-                            & (1 << description.color_index)
-                            == 0
-                        {
+                        // if line_memo[min_index + place_index + description.number - 1]
+                        //     & (1 << description.color_index)
+                        //     == 0
+                        if !grid[resources.get_index(
+                            line_id.to_pixel_id(min_index + place_index + description.number - 1),
+                            description.color_index,
+                        )] {
                             segment_note.block_states =
                                 BlockStates::Blocked(description.number - 1);
                         } else {
@@ -72,7 +95,9 @@ impl LineProbability {
                     if is_first_clue && is_first_place {
                         segment_note.left_cases = 1;
                     } else {
-                        let is_blank_possible = line_memo[min_index + place_index - 1] & 1 == 1;
+                        // let is_blank_possible = line_memo[min_index + place_index - 1] & 1 == 1;
+                        let is_blank_possible = grid[resources
+                            .get_index(line_id.to_pixel_id(min_index + place_index - 1), 0)];
 
                         if is_blank_possible && !is_first_place {
                             segment_note.left_cases = segments[place_index - 1].left_cases;
@@ -108,8 +133,12 @@ impl LineProbability {
                     if is_first_clue && is_first_place {
                         description_notes[clue_index].segments[place_index].right_cases = 1;
                     } else {
-                        let is_blank_possible =
-                            line_memo[min_index + place_index + description.number] & 1 == 1;
+                        // let is_blank_possible =
+                        //     line_memo[min_index + place_index + description.number] & 1 == 1;
+                        let is_blank_possible = grid[resources.get_index(
+                            line_id.to_pixel_id(min_index + place_index + description.number),
+                            0,
+                        )];
 
                         if is_blank_possible && !is_first_place {
                             description_notes[clue_index].segments[place_index].right_cases =
