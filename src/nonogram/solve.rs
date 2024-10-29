@@ -94,7 +94,7 @@ impl<'a> LayerSolver<'a> {
         }
     }
 
-    fn get_memo(&mut self, pixel_id: PixelId) -> usize {
+    fn get_memo(&self, pixel_id: PixelId) -> usize {
         self.grid
             .get(&pixel_id)
             .copied()
