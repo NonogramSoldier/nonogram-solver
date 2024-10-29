@@ -309,8 +309,10 @@ impl<'a> LayerSolver<'a> {
                         grid_cache[pixel_id.row_index][pixel_id.column_index] = memo;
                     }
 
-                    let mut layer_solver1 = LayerSolver::new(Some(&self), self.resources, grid_cache.clone());
-                    let mut layer_solver2 = LayerSolver::new(Some(&self), self.resources, grid_cache);
+                    let mut layer_solver1 =
+                        LayerSolver::new(Some(&self), self.resources, grid_cache.clone());
+                    let mut layer_solver2 =
+                        LayerSolver::new(Some(&self), self.resources, grid_cache);
 
                     let priority_queue1 = layer_solver1.set_pixel_memo(pixel_id, colors1, colors2);
                     let priority_queue2 = layer_solver2.set_pixel_memo(pixel_id, colors2, colors1);
