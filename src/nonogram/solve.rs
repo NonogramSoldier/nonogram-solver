@@ -13,7 +13,11 @@ pub fn solve(puzzle: &Puzzle) {
 
     let mut backtracks = 0;
     let mut nlines = 0;
-    let mut layer_solver = LayerSolver::new(None, &resources);
+    let mut layer_solver = LayerSolver::new(
+        None,
+        &resources,
+        vec![vec![resources.uncertain_memo; resources.width]; resources.height],
+    );
     if let Some(priority_queue) = layer_solver.init(&mut nlines) {
         match layer_solver.solve(priority_queue, &mut backtracks, &mut nlines) {
             SolveResult::FullySolved => {
@@ -69,46 +73,32 @@ pub struct LayerSolver<'a> {
     resources: &'a SolveResources<'a>,
     parent: Option<&'a LayerSolver<'a>>,
     grid: FxHashMap<PixelId, usize>,
-    grid_cache: FxHashMap<PixelId, usize>,
+    grid_cache: Vec<Vec<usize>>,
     line_probabilities: FxHashMap<LineId, LineProbability>,
     line_cache: FxHashMap<LineId, &'a LineProbability>,
 }
 
 impl<'a> LayerSolver<'a> {
-    fn new(parent: Option<&'a LayerSolver<'a>>, resources: &'a SolveResources<'a>) -> Self {
+    fn new(
+        parent: Option<&'a LayerSolver<'a>>,
+        resources: &'a SolveResources<'a>,
+        grid_cache: Vec<Vec<usize>>,
+    ) -> Self {
         Self {
             resources,
             parent,
             grid: Default::default(),
-            grid_cache: Default::default(),
+            grid_cache,
             line_probabilities: Default::default(),
             line_cache: Default::default(),
         }
     }
 
-    fn cache_memo(&mut self, pixel_id: PixelId) -> usize {
+    fn get_memo(&mut self, pixel_id: PixelId) -> usize {
         self.grid
             .get(&pixel_id)
-            .or_else(|| self.grid_cache.get(&pixel_id))
             .copied()
-            .unwrap_or_else(|| {
-                let memo = self.get_ancestral_memo(pixel_id);
-                self.grid_cache.insert(pixel_id, memo);
-                memo
-            })
-    }
-
-    fn get_ancestral_memo(&self, pixel_id: PixelId) -> usize {
-        match self.parent {
-            Some(parent) => match parent.grid.get(&pixel_id) {
-                Some(&memo) => memo,
-                None => match parent.grid_cache.get(&pixel_id) {
-                    Some(&memo) => memo,
-                    None => parent.get_ancestral_memo(pixel_id),
-                },
-            },
-            None => self.resources.uncertain_memo,
-        }
+            .unwrap_or_else(|| self.grid_cache[pixel_id.row_index][pixel_id.column_index])
     }
 
     fn cache_line(&mut self, line_id: LineId) -> Option<&LineProbability> {
@@ -207,7 +197,7 @@ impl<'a> LayerSolver<'a> {
     ) -> bool {
         let mut line_memo: Vec<usize> = Vec::new();
         for pixel_id in PixelIterator::new(line_id, self.resources.get_length(line_id)) {
-            line_memo.push(self.cache_memo(pixel_id));
+            line_memo.push(self.get_memo(pixel_id));
         }
 
         if !self
@@ -271,7 +261,7 @@ impl<'a> LayerSolver<'a> {
         let mut min_value: Option<(f64, PixelId, usize)> = None;
         for row_index in 0..self.resources.height {
             for pixel_id in PixelIterator::new(LineId::Row(row_index), self.resources.width) {
-                let pixel_memo = self.cache_memo(pixel_id);
+                let pixel_memo = self.get_memo(pixel_id);
                 match pixel_memo.count_ones() {
                     ..=1 => continue,
                     2 => {
@@ -312,10 +302,15 @@ impl<'a> LayerSolver<'a> {
                 let grid2;
                 {
                     let colors1 = 1 << color_index;
-                    let colors2 = self.cache_memo(pixel_id) ^ colors1;
+                    let colors2 = self.get_memo(pixel_id) ^ colors1;
 
-                    let mut layer_solver1 = LayerSolver::new(Some(&self), self.resources);
-                    let mut layer_solver2 = LayerSolver::new(Some(&self), self.resources);
+                    let mut grid_cache = self.grid_cache.clone();
+                    for (&pixel_id, &memo) in self.grid.iter() {
+                        grid_cache[pixel_id.row_index][pixel_id.column_index] = memo;
+                    }
+
+                    let mut layer_solver1 = LayerSolver::new(Some(&self), self.resources, grid_cache.clone());
+                    let mut layer_solver2 = LayerSolver::new(Some(&self), self.resources, grid_cache);
 
                     let priority_queue1 = layer_solver1.set_pixel_memo(pixel_id, colors1, colors2);
                     let priority_queue2 = layer_solver2.set_pixel_memo(pixel_id, colors2, colors1);
@@ -414,7 +409,7 @@ impl<'a> LayerSolver<'a> {
         for row_index in 0..self.resources.height {
             print!("|");
             for pixel_id in PixelIterator::new(LineId::Row(row_index), self.resources.width) {
-                let memo = self.cache_memo(pixel_id);
+                let memo = self.get_memo(pixel_id);
                 if memo == 1 {
                     print!("$$");
                 } else if memo.count_ones() == 1 {
