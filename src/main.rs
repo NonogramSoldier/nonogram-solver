@@ -21,7 +21,7 @@ fn main() -> Result<()> {
     // println!("{:#?}", puzzle);
 
     let start = Instant::now();
-    solve(&puzzle)?;
+    solve(&puzzle);
     let duration = start.elapsed();
     println!("time: {:?}", duration);
 

@@ -10,7 +10,7 @@ use solve_resources::SolveResources;
 
 use super::*;
 
-pub fn solve(puzzle: &Puzzle) -> Result<bool> {
+pub fn solve(puzzle: &Puzzle) {
     let resources = SolveResources::new(puzzle);
 
     let mut backtracks = 0;
@@ -21,8 +21,6 @@ pub fn solve(puzzle: &Puzzle) -> Result<bool> {
     layer_solver.show_blank_possibility();
     println!("line_solves: {}", nlines);
     println!("backtracks:  {}", backtracks);
-
-    Ok(true)
 }
 
 fn calc_priority(
@@ -211,13 +209,12 @@ impl<'a> LayerSolver<'a> {
         mut priority_queue: FxPriorityQueue<LineId, f64>,
         backtracks: &mut u128,
         nlines: &mut u128,
-    ) {
+    ) -> bool {
         loop {
             if let Some((line_id, _)) = priority_queue.pop() {
                 *nlines += 1;
                 if !self.line_solve(line_id, &mut priority_queue) {
-                    self.grid.fill(false);
-                    return;
+                    return false;
                 }
             } else {
                 break;
@@ -273,11 +270,29 @@ impl<'a> LayerSolver<'a> {
                 let priority_queue1 = layer_solver1.set_pixel_memo(pixel_id, &colors1, &colors2);
                 let priority_queue2 = layer_solver2.set_pixel_memo(pixel_id, &colors2, &colors1);
 
-                layer_solver1.solve(priority_queue1, backtracks, nlines);
-                layer_solver2.solve(priority_queue2, backtracks, nlines);
-
-                self.grid = layer_solver1.grid | layer_solver2.grid;
+                match (
+                    layer_solver1.solve(priority_queue1, backtracks, nlines),
+                    layer_solver2.solve(priority_queue2, backtracks, nlines),
+                ) {
+                    (true, true) => {
+                        self.grid = layer_solver1.grid | layer_solver2.grid;
+                        true
+                    }
+                    (true, false) => {
+                        self.grid = layer_solver1.grid;
+                        true
+                    }
+                    (false, true) => {
+                        self.grid = layer_solver2.grid;
+                        true
+                    }
+                    (false, false) => false,
+                }
+            } else {
+                true
             }
+        } else {
+            true
         }
     }
 
