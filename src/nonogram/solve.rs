@@ -204,12 +204,15 @@ impl<'a> LayerSolver<'a> {
             .line_probabilities
             .entry(line_id)
             .or_insert_with(|| {
-                LineProbability::new(self.resources.get_length(line_id), self.resources.color_num)
+                LineProbability::new(
+                    self.resources,
+                    line_id,
+                    self.line_cache.get(&line_id).copied(),
+                )
             })
             .solve(
                 &line_memo,
                 self.resources.get_line_clue(line_id),
-                self.resources.get_free(line_id),
             )
         {
             return false;
