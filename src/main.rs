@@ -24,7 +24,7 @@ fn main() -> Result<()> {
     solve(&puzzle);
     let duration = start.elapsed();
     let cpu_duration = cpu_start.elapsed();
-    println!("cpu time: {:?}", cpu_duration);
+    println!("cpu-time: {:?}", cpu_duration);
     println!("    time: {:?}", duration);
 
     Ok(())
