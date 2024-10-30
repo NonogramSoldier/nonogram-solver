@@ -2,13 +2,18 @@ mod line_probability;
 mod solve_resources;
 
 use crate::priority_queue::FxPriorityQueue;
+use cpu_time::ProcessTime;
 use fxhash::FxHashMap;
 use line_probability::LineProbability;
 use solve_resources::SolveResources;
+use std::time::Instant;
 
 use super::*;
 
 pub fn solve(puzzle: &Puzzle) {
+    let cpu_start = ProcessTime::now();
+    let start = Instant::now();
+
     let resources = SolveResources::new(puzzle);
 
     let mut backtracks = 0;
@@ -19,7 +24,10 @@ pub fn solve(puzzle: &Puzzle) {
         vec![vec![resources.uncertain_memo; resources.width]; resources.height],
     );
     if let Some(priority_queue) = layer_solver.init(&mut nlines) {
-        match layer_solver.solve(priority_queue, &mut backtracks, &mut nlines) {
+        let result = layer_solver.solve(priority_queue, &mut backtracks, &mut nlines);
+        let duration = start.elapsed();
+        let cpu_duration = cpu_start.elapsed();
+        match result {
             SolveResult::FullySolved => {
                 layer_solver.show_blank_possibility();
                 println!("line_solves: {}", nlines);
@@ -31,8 +39,14 @@ pub fn solve(puzzle: &Puzzle) {
             }
             SolveResult::Conflict => println!("nanndeyanenn"),
         }
+        println!("cpu-time: {:?}", cpu_duration);
+        println!("    time: {:?}", duration);
     } else {
+        let duration = start.elapsed();
+        let cpu_duration = cpu_start.elapsed();
         println!("nanndeyanenn");
+        println!("cpu-time: {:?}", cpu_duration);
+        println!("    time: {:?}", duration);
     }
 }
 
@@ -210,10 +224,7 @@ impl<'a> LayerSolver<'a> {
                     self.line_cache.get(&line_id).copied(),
                 )
             })
-            .solve(
-                &line_memo,
-                self.resources.get_line_clue(line_id),
-            )
+            .solve(&line_memo, self.resources.get_line_clue(line_id))
         {
             return false;
         }
