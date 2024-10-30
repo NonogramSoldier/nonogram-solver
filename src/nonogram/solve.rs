@@ -39,14 +39,14 @@ pub fn solve(puzzle: &Puzzle) {
             }
             SolveResult::Conflict => println!("nanndeyanenn"),
         }
-        println!("cpu-time: {:?}", cpu_duration);
-        println!("    time: {:?}", duration);
+        println!("cpu-time: {}s", cpu_duration.as_secs_f64());
+        println!("    time: {}s", duration.as_secs_f64());
     } else {
         let duration = start.elapsed();
         let cpu_duration = cpu_start.elapsed();
         println!("nanndeyanenn");
-        println!("cpu-time: {:?}", cpu_duration);
-        println!("    time: {:?}", duration);
+        println!("cpu-time: {}s", cpu_duration.as_secs_f64());
+        println!("    time: {}s", duration.as_secs_f64());
     }
 }
 
